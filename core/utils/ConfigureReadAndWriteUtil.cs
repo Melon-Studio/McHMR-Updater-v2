@@ -45,11 +45,19 @@ public class ConfigureReadAndWriteUtil
             // 根据属性类型进行转换
             if (propertyInfo.PropertyType.IsPrimitive || propertyInfo.PropertyType == typeof(string) || propertyInfo.PropertyType == typeof(decimal))
             {
+                if (value == null)
+                {
+                    return null;
+                }
                 return value.ToString();
             }
             else
             {
                 // 非原始类型使用序列化对象
+                if (value == null)
+                {
+                    return null;
+                }
                 return JsonConvert.SerializeObject(value);
             }
         }
@@ -94,7 +102,8 @@ public class ConfigureReadAndWriteUtil
             }
 
             propertyInfo.SetValue( apiEntity, value, null );
-            
+            string updatedConfigContent = JsonConvert.SerializeObject(apiEntity, Formatting.Indented);
+            File.WriteAllText(configPath, updatedConfigContent);
         }
         catch (JsonException jsonEx)
         {

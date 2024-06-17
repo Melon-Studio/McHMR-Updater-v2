@@ -50,10 +50,8 @@ public partial class MainWindow : FluentWindow
         // 检查API配置
         try
         {
-            string json = File.ReadAllText(new ConfigurationCheck().getConfigFile());
-
-            ApiEntity entity = JsonConvert.DeserializeObject<ApiEntity>(json);
-            if (entity?.apiUrl == null)
+            string apiUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
+            if (string.IsNullOrEmpty(apiUrl))
             {
                 Window startWindow = new StartWindow();
                 startWindow.ShowDialog();
@@ -79,7 +77,7 @@ public partial class MainWindow : FluentWindow
             throw new NetworkNotConnectedException("网络未连接");
         }
         // 客户端向服务器请求获取最新版本信息。服务器返回最新版本信息。进行更新匹配。
-        string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("baseUrl");
+        string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
         client = new RestSharpClient(baseUrl);
 
@@ -88,13 +86,20 @@ public partial class MainWindow : FluentWindow
         client = new RestSharpClient(baseUrl, token);
 
         string localVersion = ConfigureReadAndWriteUtil.GetConfigValue("version");
-        var serverVersion = await client.GetAsync<VersionEntity>("/GetLatestVersion");
+
+        if (string.IsNullOrEmpty(localVersion))
+        {
+            ConfigureReadAndWriteUtil.SetConfigValue("version", "0.0.0");
+        }
+
+        var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
 
         if (new Version(localVersion) >= new Version(serverVersion.data.latestVersion))
         {
             tipText.Text = "暂无更新，正在打开启动器";
             startLauncher();
         }
+        tipText.Text = "检测到更新，正在获取差异文件";
         // 客户端在本地进行版本对比，如有更新，向服务器请求获取最新版本游戏的文件哈希列表。
 
         // 服务器返回最新版本游戏的文件哈希列表。客户端根据文件哈希列表进行本地校验。
@@ -102,7 +107,7 @@ public partial class MainWindow : FluentWindow
         // 客户端向服务器请求生成最新版本的游戏的增量包。
 
         // 服务器返回最新版本的游戏增量包。客户端将最新版本的游戏覆盖安装到本地。
-        
+
     }
 
     private void startLauncher()

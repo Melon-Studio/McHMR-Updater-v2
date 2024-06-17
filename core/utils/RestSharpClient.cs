@@ -67,7 +67,7 @@ public class RestSharpClient
     {
         if (token != null)
         {
-            _token = token;
+            _client.AddDefaultHeader("Authorization", "Bearer " + token);
         }
 
         RestRequest request = new RestRequest(url, Method.Get);
@@ -120,7 +120,7 @@ public class RestSharpClient
     {
         if (token != null)
         {
-            _token = token;
+            _client.AddDefaultHeader("Authorization", "Bearer " + token);
         }
 
         var request = new RestRequest(url, Method.Post);

@@ -77,7 +77,7 @@ public class TokenManager
         {
             TokenEntity entity = new TokenEntity();
 
-            var res = await _restClient.GetAsync<VersionEntity>("/GetLatestVersion", token);
+            var res = await _restClient.GetAsync<VersionEntity>("/update/GetLatestVersion", token);
             if (!string.IsNullOrEmpty(res.data.latestVersion))
             {
                 return true;
@@ -86,8 +86,9 @@ public class TokenManager
         }
         catch (Exception ex)
         {
-            Log.Error("asyncCheckAvailability 获取Token失败", ex);
-            throw new ApplicationException("asyncCheckAvailability 获取Token失败", ex);
+
+            Log.Info("asyncCheckAvailability 获取Token失败，重新获取 Token", ex);
+            return false;
         }
     }
 }
