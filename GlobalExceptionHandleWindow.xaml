@@ -1,0 +1,51 @@
+﻿<ui:FluentWindow x:Class="McHMR_Updater_v2.GlobalExceptionHandleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:McHMR_Updater_v2"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="GlobalExceptionHandleWindow" Height="350" Width="622" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Topmost="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="7*" />
+            <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar 
+            ShowClose="False"
+            ShowMaximize="False"
+            ShowMinimize="False"
+            x:Name="errorTitle"
+            Title="程序发生了错误"/>
+
+        <ui:DynamicScrollViewer
+            Grid.Row="0"
+            Margin="10, 50, 10, 10">
+            <ui:TextBlock 
+                Margin="5, 0, 5, 5"
+                TextWrapping="Wrap"
+                x:Name="errorText"
+                Text="程序在运行时发生了错误，你可以点击下方复制按钮，将错误提交到 McHMR-Updater Github 仓库的 Issues 中，开发者将帮助你处理此错误。&#x0a;"/>
+        </ui:DynamicScrollViewer>
+        
+        
+
+        <ui:Button 
+            Grid.Row="1" 
+            Content="复制" 
+            x:Name="copyBtn"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="10, 0, 80, 10" Click="copyBtn_Click" />
+
+        <ui:Button 
+            Grid.Row="1" 
+            Content="关闭" 
+            x:Name="closeBtn"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="10, 0, 10, 10" Click="closeBtn_Click" />
+    </Grid>
+</ui:FluentWindow>
