@@ -64,7 +64,7 @@ public partial class MainWindow : FluentWindow
         
     }
 
-    private async void FluentWindow_Loaded(object sender, RoutedEventArgs e)
+    private void FluentWindow_Loaded(object sender, RoutedEventArgs e)
     {
         // 初始化
         progressBar.Visibility = Visibility.Collapsed;
@@ -81,11 +81,11 @@ public partial class MainWindow : FluentWindow
         judgmentUpdate();
         // 请求最新版本哈希列表
         requestDifferenceList();
-        // 服务器返回最新版本游戏的文件哈希列表。客户端根据文件哈希列表进行本地校验。
+        // 本地校验
 
-        // 客户端向服务器请求生成最新版本的游戏的增量包。
+        // 请求增量包
 
-        // 服务器返回最新版本的游戏增量包。客户端将最新版本的游戏覆盖安装到本地。
+        // 覆盖安装本地
 
     }
 
@@ -113,6 +113,7 @@ public partial class MainWindow : FluentWindow
         {
             tipText.Text = "暂无更新，正在打开启动器";
             startLauncher();
+            return;
         }
         tipText.Text = "检测到更新，正在获取差异文件";
     }
