@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -33,8 +34,6 @@ public partial class MainWindow : FluentWindow
 
     public MainWindow()
     {
-        InitializationCheck();
-
         InitializeComponent();
 
         Loaded += (sender, args) =>
@@ -71,12 +70,27 @@ public partial class MainWindow : FluentWindow
         progressBar.Visibility = Visibility.Collapsed;
         progressBarSpeed.Visibility = Visibility.Collapsed;
         tipText.Text = "正在获取最新版本";
+        InitializationCheck();
+        titleBar.Title = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
         // 网络检测
         if (!NetworkInterface.GetIsNetworkAvailable())
         {
             throw new NetworkNotConnectedException("网络未连接");
         }
-        // 客户端向服务器请求获取最新版本信息。服务器返回最新版本信息。进行更新匹配。
+        // 判断更新
+        judgmentUpdate();
+        // 请求最新版本哈希列表
+        requestDifferenceList();
+        // 服务器返回最新版本游戏的文件哈希列表。客户端根据文件哈希列表进行本地校验。
+
+        // 客户端向服务器请求生成最新版本的游戏的增量包。
+
+        // 服务器返回最新版本的游戏增量包。客户端将最新版本的游戏覆盖安装到本地。
+
+    }
+
+    private async void judgmentUpdate()
+    {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
         client = new RestSharpClient(baseUrl);
@@ -90,28 +104,31 @@ public partial class MainWindow : FluentWindow
         if (string.IsNullOrEmpty(localVersion))
         {
             ConfigureReadAndWriteUtil.SetConfigValue("version", "0.0.0");
+            localVersion = "0.0.0";
         }
 
         var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
 
-        if (new Version(localVersion) >= new Version(serverVersion.data.latestVersion))
+        if (new Version(localVersion) <= new Version(serverVersion.data.latestVersion))
         {
             tipText.Text = "暂无更新，正在打开启动器";
             startLauncher();
         }
         tipText.Text = "检测到更新，正在获取差异文件";
-        // 客户端在本地进行版本对比，如有更新，向服务器请求获取最新版本游戏的文件哈希列表。
-
-        // 服务器返回最新版本游戏的文件哈希列表。客户端根据文件哈希列表进行本地校验。
-
-        // 客户端向服务器请求生成最新版本的游戏的增量包。
-
-        // 服务器返回最新版本的游戏增量包。客户端将最新版本的游戏覆盖安装到本地。
-
     }
 
-    private void startLauncher()
+    private async void requestDifferenceList()
     {
+    
+    }
+
+    private async void startLauncher()
+    {
+        Process.Start(new ConfigurationCheck().getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
+        await Task.Delay(3000);
+        Process.GetCurrentProcess().Kill();
         return;
     }
+
+
 }

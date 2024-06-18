@@ -4,15 +4,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:McHMR_Updater_v2"
+        xmlns:System="clr-namespace:System;assembly=mscorlib"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="StartWindow" MinHeight="150" Height="170" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" Loaded="FluentWindow_Loaded">
+        Title="StartWindow" MinHeight="150" Height="250" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" Loaded="FluentWindow_Loaded">
     <Grid>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="1.5*" />
-            <RowDefinition Height="1*" />
-            <RowDefinition Height="1.5*" />
+            <RowDefinition Height="2*" />
+            <RowDefinition Height="7*" />
             <RowDefinition Height="2*" />
         </Grid.RowDefinitions>
         
@@ -30,20 +30,50 @@
             VerticalAlignment="Top"
             Margin="10,10,10,10"/>
 
-        <ui:TextBlock 
-            Grid.Row="1" 
-            Text="API 地址: "
-            FontSize="14"
-            VerticalAlignment="Bottom"
-            Margin="10,0,10,5"/>    
+        <StackPanel
+            Grid.Row="1"
+            >
+            <ui:TextBlock 
+                Text="API 地址: "
+                FontSize="14"
+                VerticalAlignment="Bottom"
+                Margin="10,0,10,5"/>
 
-        <ui:TextBox
-            Grid.Row="2"
-            x:Name="apiInput"
-            VerticalAlignment="Top"
-            Margin="10,0,10,10" 
-            Cursor="IBeam" 
-            PlaceholderText="请拷贝管理端主页提供的 API 地址"/>
+            <ui:TextBox
+                x:Name="apiInput"
+                VerticalAlignment="Top"
+                Margin="10,0,10,10" 
+                Cursor="IBeam" 
+                PlaceholderText="请拷贝管理端主页提供的 API 地址"/>
+
+            <ui:TextBlock 
+                Text="选择启动器文件: "
+                FontSize="14"
+                VerticalAlignment="Bottom"
+                Margin="10,10,10,5"/>
+
+            <StackPanel Orientation="Horizontal">
+                <ui:TextBox
+                    x:Name="launcherInput"
+                    Margin="10,0,10,10" 
+                    Cursor="IBeam" 
+                    PlaceholderText="请点击右侧按钮选择启动器文件"
+                    Width="370" VerticalAlignment="Center"/>
+
+                <ui:Button 
+                    x:Name="selectLauncherBtn"
+                    Width="60" 
+                    Height="33"
+                    Icon="Folder16"
+                    VerticalAlignment="Top" 
+                    Margin="0,2,0,0" 
+                    Click="selectLauncherBtn_Click" >
+                        <ui:SymbolIcon Symbol="Folder16"/>
+                </ui:Button>
+            </StackPanel>
+        </StackPanel>
+        
+        
 
         <ui:TextBlock
             Grid.Row="3"

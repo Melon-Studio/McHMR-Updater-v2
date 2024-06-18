@@ -87,10 +87,12 @@ public class RestSharpClient
                 {
                     if (_needToThrowGlobally)
                     {
+                        Log.Info(result.msg);
                         throw new Exception(result.msg);
                     }
                     else
                     {
+                        Log.Info(result.msg);
                         return new RestApiResult<T>(result.msg);
                     }
                 }

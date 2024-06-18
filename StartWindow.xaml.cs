@@ -18,6 +18,7 @@ using log4net;
 using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Wpf.Ui.Controls;
 
@@ -28,6 +29,8 @@ public partial class StartWindow : FluentWindow
     public static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
     private int BtnStatus = 0;
+    private int selectExe = 0;
+    private string selectedFilePath;
 
     public StartWindow()
     {
@@ -47,6 +50,7 @@ public partial class StartWindow : FluentWindow
         // 初始化
         resultMsg.Text = "";
         apiInput.BorderBrush = base.BorderBrush;
+        launcherInput.BorderBrush= base.BorderBrush;
         if (BtnStatus == 1) 
         {
             this.Close();
@@ -59,6 +63,24 @@ public partial class StartWindow : FluentWindow
             resultMsg.Text = "请填写 API 地址";
             return;
         }
+        // 检测启动器是否选择
+        if (launcherInput.Text.Equals(null) || launcherInput.Text.Equals(""))
+        {
+            Log.Info("请选择启动器路径");
+            launcherInput.BorderBrush = Brushes.Red;
+            resultMsg.Text = "请选择启动器路径";
+            return;
+        }
+
+        // 检测是否选择文件正常
+        if (selectExe == 0)
+        {
+            Log.Info("文件不在程序目录中");
+            launcherInput.BorderBrush = Brushes.Red;
+            resultMsg.Text = "文件必须在程序目录中";
+            return;
+        }
+
         // 检测地址是否正常
         btnText.Visibility = Visibility.Hidden;
         btnLoadding.Visibility = Visibility.Visible;
@@ -89,6 +111,8 @@ public partial class StartWindow : FluentWindow
 
                 writer.Close();
                 fileStream.Close();
+
+                ConfigureReadAndWriteUtil.SetConfigValue("launcher", selectedFilePath);
 
                 Log.Info("配置完成");
                 resultMsg.Foreground = Brushes.Green;
@@ -135,5 +159,57 @@ public partial class StartWindow : FluentWindow
             Log.Error("网络未连接");
             throw new NetworkNotConnectedException("网络未连接");
         }
+    }
+
+    private void selectLauncherBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // 显示文件选择对话框
+        OpenFileDialog openFileDialog = new OpenFileDialog();
+        openFileDialog.Filter = "可执行文件|*.exe";
+        openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        openFileDialog.Title = "选择exe可执行文件";
+        openFileDialog.Multiselect = false;
+        if (openFileDialog.ShowDialog() == true) // 确保用户选择了文件
+        {
+            selectedFilePath = openFileDialog.FileName;
+
+            // 检查文件是否在程序目录中
+            string appDir = new ConfigurationCheck().getCurrentDir();
+
+            if (!IsFileInDirectory(selectedFilePath, appDir))
+            {
+                // 文件不在程序目录中
+                Log.Info("文件不在程序目录中");
+                launcherInput.BorderBrush = Brushes.Red;
+                resultMsg.Text = "文件必须在程序目录中";
+                selectExe = 0;
+            }
+            else
+            {
+                // 文件在程序目录中
+                selectedFilePath = selectedFilePath.Replace(appDir, "");
+
+                launcherInput.BorderBrush = base.BorderBrush;
+                launcherInput.Text = selectedFilePath;
+                resultMsg.Text = "";
+                selectExe = 1;
+            }
+        }
+        else
+        {
+            // 用户取消了文件选择
+            Log.Info("请选择启动器路径");
+            launcherInput.BorderBrush = Brushes.Red;
+            resultMsg.Text = "请选择启动器路径";
+        }
+    }
+
+    private bool IsFileInDirectory(string filePath, string directoryPath)
+    {
+        // 获取文件的目录路径
+        string fileDirectory = System.IO.Path.GetDirectoryName(filePath);
+
+        // 检查文件目录是否与应用程序目录相同
+        return string.Equals(fileDirectory, directoryPath, StringComparison.OrdinalIgnoreCase);
     }
 }
