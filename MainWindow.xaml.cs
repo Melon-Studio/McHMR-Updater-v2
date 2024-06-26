@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -82,7 +83,7 @@ public partial class MainWindow : FluentWindow
         // 请求最新版本哈希列表
         requestDifferenceList();
         // 本地校验
-
+        Console.WriteLine("test");
         // 请求增量包
 
         // 覆盖安装本地
@@ -94,8 +95,16 @@ public partial class MainWindow : FluentWindow
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
         client = new RestSharpClient(baseUrl);
-
-        token = await new TokenManager(client).getToken();
+        try
+        {
+            token = await new TokenManager(client).getToken();
+        }
+        catch(Exception ex)
+        {
+            Log.Error(ex);
+            exitUpdater(ex.Message);
+            return;
+        }
 
         client = new RestSharpClient(baseUrl, token);
 
@@ -107,20 +116,52 @@ public partial class MainWindow : FluentWindow
             localVersion = "0.0.0";
         }
 
-        var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
-
-        if (new Version(localVersion) <= new Version(serverVersion.data.latestVersion))
+        try
         {
-            tipText.Text = "暂无更新，正在打开启动器";
-            startLauncher();
+            var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
+
+            if (new Version(localVersion) > new Version(serverVersion.data.latestVersion))
+            {
+                tipText.Text = "暂无更新，正在打开启动器";
+                startLauncher();
+                return;
+            }
+            tipText.Text = "检测到更新，正在获取差异文件";
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            exitUpdater(ex.Message);
             return;
         }
-        tipText.Text = "检测到更新，正在获取差异文件";
     }
 
     private async void requestDifferenceList()
     {
-    
+        try
+        {
+            tipText.Text = "正在分析本地客户端差异";
+
+            var versionHashList = await client.GetAsync<List<HashEntity>>("/update/GetLatestVersionHashList");
+            var whitelist = await client.GetAsync<string[]>("/update/GetWhitelist");
+
+            string[] differentialFilesArray = await differentialFiles(versionHashList.data, whitelist.data);
+
+            Console.WriteLine(differentialFilesArray.Where(s => true).ToString());
+            //if ( /* TODO */ )
+            //{
+            //    tipText.Text = "暂无更新，正在打开启动器";
+            //    startLauncher();
+            //    return;
+            //}
+            //tipText.Text = "检测到更新，正在获取差异文件";
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            exitUpdater(ex.Message);
+            return;
+        }
     }
 
     private async void startLauncher()
@@ -131,5 +172,38 @@ public partial class MainWindow : FluentWindow
         return;
     }
 
+    private async void exitUpdater(string tip)
+    {
+        tipText.Text = tip;
+        await Task.Delay(3000);
+        Process.GetCurrentProcess().Kill();
+        return;
+    }
 
+    private async Task<string[]> differentialFiles(List<HashEntity> laset, string[] whitelist)
+    {
+        string[] files = new string[] { };
+        await Task.Run(() =>
+        {
+            // 获取本地匹配目录
+            string matchingDir = new ConfigurationCheck().getCurrentDir();
+            // 分析 whitelist 中的是目录还是文件
+            ArrayList whitelistDir = new ArrayList();
+            ArrayList whitelistFiles = new ArrayList();
+
+            whitelistDir.AddRange(
+                whitelist
+                .Where(s => Directory.Exists(s))
+                .ToArray()
+            );
+
+            whitelistFiles.AddRange(
+                whitelist
+                .Where(s => File.Exists(s))
+                .ToArray()
+            );
+
+        });
+        return files;
+    }
 }

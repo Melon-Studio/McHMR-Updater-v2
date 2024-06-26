@@ -44,7 +44,10 @@ namespace McHMR_Updater_v2
 
         private void closeBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (_exception.Message.Equals("网络未连接")) { Process.GetCurrentProcess().Kill(); }
+            if (_exception.Message.Equals("网络未连接")) 
+            { 
+                Process.GetCurrentProcess().Kill(); 
+            }
             this.Close();
         }
     }
