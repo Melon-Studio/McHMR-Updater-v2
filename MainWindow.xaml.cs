@@ -143,7 +143,7 @@ public partial class MainWindow : FluentWindow
             tipText.Text = "正在分析本地客户端差异";
 
             var versionHashList = await client.GetAsync<List<HashEntity>>("/update/GetLatestVersionHashList");
-            var whitelist = await client.GetAsync<string[]>("/update/GetWhitelist");
+            var whitelist = await client.GetAsync<string>("/update/GetWhitelist");
 
             string[] differentialFilesArray = await differentialFiles(versionHashList.data, whitelist.data);
 
@@ -180,8 +180,10 @@ public partial class MainWindow : FluentWindow
         return;
     }
 
-    private async Task<string[]> differentialFiles(List<HashEntity> laset, string[] whitelist)
+    private async Task<string[]> differentialFiles(List<HashEntity> laset, string whitelist)
     {
+        string[] whitelistArrayBefore = whitelist.Split(Environment.NewLine.ToCharArray());
+        string[] whitelistArrayAfter = whitelistArrayBefore.Where(s => !string.IsNullOrEmpty(s)).ToArray();
         string[] files = new string[] { };
         await Task.Run(() =>
         {
@@ -192,13 +194,13 @@ public partial class MainWindow : FluentWindow
             ArrayList whitelistFiles = new ArrayList();
 
             whitelistDir.AddRange(
-                whitelist
+                whitelistArrayAfter
                 .Where(s => Directory.Exists(s))
                 .ToArray()
             );
 
             whitelistFiles.AddRange(
-                whitelist
+                whitelistArrayAfter
                 .Where(s => File.Exists(s))
                 .ToArray()
             );
