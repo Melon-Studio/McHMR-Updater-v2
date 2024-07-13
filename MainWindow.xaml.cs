@@ -84,6 +84,7 @@ public partial class MainWindow : FluentWindow
         requestDifferenceList();
         // 本地校验
         Console.WriteLine("test");
+        Console.WriteLine("test12334 ");
         // 请求增量包
 
         // 覆盖安装本地
