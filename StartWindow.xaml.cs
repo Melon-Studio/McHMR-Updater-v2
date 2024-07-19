@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using log4net;
+using McHMR_Updater_v2.core;
 using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
@@ -88,7 +89,6 @@ public partial class StartWindow : FluentWindow
         try
         {
             var client = new RestSharpClient(apiInput.Text, null, false);
-
             var apiResponse = await client.GetAsync<ApiEntity>("");
 
             if (getTaskContent(apiResponse, "data") == "null")
