@@ -4,8 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Net.NetworkInformation;
+<<<<<<< Updated upstream
 using System.Text;
+=======
+using System.Runtime.InteropServices;
+>>>>>>> Stashed changes
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -65,7 +70,11 @@ public partial class MainWindow : FluentWindow
         
     }
 
+<<<<<<< Updated upstream
     private void FluentWindow_Loaded(object sender, RoutedEventArgs e)
+=======
+    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
+>>>>>>> Stashed changes
     {
         // 初始化
         progressBar.Visibility = Visibility.Collapsed;
@@ -74,23 +83,65 @@ public partial class MainWindow : FluentWindow
         InitializationCheck();
         titleBar.Title = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
         // 网络检测
-        if (!NetworkInterface.GetIsNetworkAvailable())
+        if (!IsConnectionAvailable())
         {
-            throw new NetworkNotConnectedException("网络未连接");
+            Log.Error("网络未连接");
+            await exitUpdater("网络未连接，程序即将退出");
+        }
+        // 服务器连接测试
+        try
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage response = await client.GetAsync(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
+                if (!response.IsSuccessStatusCode)
+                {
+                    Log.Error("无法连接至服务器");
+                    await exitUpdater("无法连接至服务器，请联系服主");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("无法连接至服务器: " + ex.Message);
+            await exitUpdater("无法连接至服务器，请联系服主");
         }
         // 判断更新
-        judgmentUpdate();
+        await judgmentUpdate();
         // 请求最新版本哈希列表
         requestDifferenceList();
         // 本地校验
+<<<<<<< Updated upstream
         Console.WriteLine("test");
         // 请求增量包
 
         // 覆盖安装本地
 
+=======
+        List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
+        //删除服务器不存在的文件
+        NoFileUtil noFile = new NoFileUtil();
+        List<string> noFileList = await noFile.CheckFiles(hashLits.hashList, hashLits.whiteList, gamePath);
+        foreach (string file in noFileList)
+        {
+            File.Delete(file);
+        }
+        // 请求增量包
+        var jsonBodyObject = new { fileList = inconsistentFile };
+        string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
+        await client.DownloadIncrementalPackage("/update/GenerateIncrementalPackage", jsonBody, gamePath + "\\inconsistentFile");
+        // 覆盖安装本地
+        using (ZipFile zip = ZipFile.Read(gamePath + "\\inconsistentFile"))
+        {
+            foreach (ZipEntry entry in zip)
+            {
+                entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
+            }
+        }
+>>>>>>> Stashed changes
     }
 
-    private async void judgmentUpdate()
+    private async Task judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
@@ -102,7 +153,7 @@ public partial class MainWindow : FluentWindow
         catch(Exception ex)
         {
             Log.Error(ex);
-            exitUpdater(ex.Message);
+            await exitUpdater(ex.Message);
             return;
         }
 
@@ -123,7 +174,7 @@ public partial class MainWindow : FluentWindow
             if (new Version(localVersion) > new Version(serverVersion.data.latestVersion))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
-                startLauncher();
+                await startLauncher();
                 return;
             }
             tipText.Text = "检测到更新，正在获取差异文件";
@@ -131,7 +182,7 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             Log.Error(ex);
-            exitUpdater(ex.Message);
+            await exitUpdater(ex.Message);
             return;
         }
     }
@@ -145,6 +196,7 @@ public partial class MainWindow : FluentWindow
             var versionHashList = await client.GetAsync<List<HashEntity>>("/update/GetLatestVersionHashList");
             var whitelist = await client.GetAsync<string>("/update/GetWhitelist");
 
+<<<<<<< Updated upstream
             string[] differentialFilesArray = await differentialFiles(versionHashList.data, whitelist.data);
 
             Console.WriteLine(differentialFilesArray.Where(s => true).ToString());
@@ -155,16 +207,27 @@ public partial class MainWindow : FluentWindow
             //    return;
             //}
             //tipText.Text = "检测到更新，正在获取差异文件";
+=======
+            ListEntity listEntity = new ListEntity();
+            listEntity.hashList = versionHashList.data;
+            listEntity.whiteList = whitelist.data;
+            return listEntity;
+>>>>>>> Stashed changes
         }
         catch (Exception ex)
         {
             Log.Error(ex);
+<<<<<<< Updated upstream
             exitUpdater(ex.Message);
             return;
+=======
+            await exitUpdater(ex.Message);
+            return null;
+>>>>>>> Stashed changes
         }
     }
 
-    private async void startLauncher()
+    private async Task startLauncher()
     {
         Process.Start(new ConfigurationCheck().getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
         await Task.Delay(3000);
@@ -172,12 +235,20 @@ public partial class MainWindow : FluentWindow
         return;
     }
 
-    private async void exitUpdater(string tip)
+    private async Task exitUpdater(string tip)
     {
         tipText.Text = tip;
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
-        return;
+    }
+
+    [DllImport("wininet.dll", SetLastError = true)]
+    private static extern bool InternetGetConnectedState(out int description, int reservedValue);
+
+    public static bool IsConnectionAvailable()
+    {
+        int description;
+        return InternetGetConnectedState(out description, 0);
     }
 
     private async Task<string[]> differentialFiles(List<HashEntity> laset, string whitelist)
@@ -208,4 +279,6 @@ public partial class MainWindow : FluentWindow
         });
         return files;
     }
+
+    
 }

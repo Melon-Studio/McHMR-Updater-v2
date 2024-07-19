@@ -31,7 +31,8 @@ public class ConfigureReadAndWriteUtil
             if (apiEntity == null)
             {
                 Log.Error("反序列化JSON失败，结果为空。");
-                throw new InvalidOperationException("反序列化JSON失败，结果为空。");
+                StartWindow startWindow = new StartWindow();
+                startWindow.ShowDialog();
             }
 
             var propertyInfo = apiEntity.GetType().GetProperty(configKey);
