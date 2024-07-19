@@ -36,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DotNetZip, Version=1.16.0.0, Culture=neutral, PublicKeyToken=6583c7c814667745, processorArchitecture=MSIL">
+      <HintPath>packages\DotNetZip.1.16.0\lib\net40\DotNetZip.dll</HintPath>
+    </Reference>
     <Reference Include="Downloader, Version=3.0.6.0, Culture=neutral, PublicKeyToken=844973e732f6cdf4, processorArchitecture=MSIL">
       <HintPath>packages\Downloader.3.0.6\lib\net452\Downloader.dll</HintPath>
     </Reference>
@@ -106,12 +109,15 @@
     <Compile Include="core\customException\TestException.cs" />
     <Compile Include="core\entity\ApiEntity.cs" />
     <Compile Include="core\entity\HashEntity.cs" />
+    <Compile Include="core\entity\ListEntity.cs" />
     <Compile Include="core\entity\TokenEntity.cs" />
     <Compile Include="core\entity\VersionEntity.cs" />
     <Compile Include="core\TokenManager.cs" />
+    <Compile Include="core\utils\FileHashUtil.cs" />
     <Compile Include="core\utils\ConfigurationCheck.cs" />
     <Compile Include="core\utils\ConfigureReadAndWriteUtil.cs" />
     <Compile Include="core\utils\FileCoreUtil.cs" />
+    <Compile Include="core\utils\NoFileUtil.cs" />
     <Compile Include="core\utils\RestSharpClient.cs" />
     <Compile Include="GlobalExceptionHandleWindow.xaml.cs">
       <DependentUpon>GlobalExceptionHandleWindow.xaml</DependentUpon>
