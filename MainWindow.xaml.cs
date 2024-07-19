@@ -5,25 +5,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.NetworkInformation;
-<<<<<<< Updated upstream
-using System.Text;
-=======
 using System.Runtime.InteropServices;
->>>>>>> Stashed changes
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using log4net;
 using McHMR_Updater_v2.core;
-using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
 using Newtonsoft.Json;
@@ -70,11 +56,8 @@ public partial class MainWindow : FluentWindow
         
     }
 
-<<<<<<< Updated upstream
-    private void FluentWindow_Loaded(object sender, RoutedEventArgs e)
-=======
+
     private async void FluentWindow_ContentRendered(object sender, EventArgs e)
->>>>>>> Stashed changes
     {
         // 初始化
         progressBar.Visibility = Visibility.Collapsed;
@@ -111,13 +94,7 @@ public partial class MainWindow : FluentWindow
         // 请求最新版本哈希列表
         requestDifferenceList();
         // 本地校验
-<<<<<<< Updated upstream
-        Console.WriteLine("test");
-        // 请求增量包
 
-        // 覆盖安装本地
-
-=======
         List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
         //删除服务器不存在的文件
         NoFileUtil noFile = new NoFileUtil();
@@ -138,7 +115,6 @@ public partial class MainWindow : FluentWindow
                 entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
             }
         }
->>>>>>> Stashed changes
     }
 
     private async Task judgmentUpdate()
@@ -196,34 +172,16 @@ public partial class MainWindow : FluentWindow
             var versionHashList = await client.GetAsync<List<HashEntity>>("/update/GetLatestVersionHashList");
             var whitelist = await client.GetAsync<string>("/update/GetWhitelist");
 
-<<<<<<< Updated upstream
-            string[] differentialFilesArray = await differentialFiles(versionHashList.data, whitelist.data);
-
-            Console.WriteLine(differentialFilesArray.Where(s => true).ToString());
-            //if ( /* TODO */ )
-            //{
-            //    tipText.Text = "暂无更新，正在打开启动器";
-            //    startLauncher();
-            //    return;
-            //}
-            //tipText.Text = "检测到更新，正在获取差异文件";
-=======
             ListEntity listEntity = new ListEntity();
             listEntity.hashList = versionHashList.data;
             listEntity.whiteList = whitelist.data;
             return listEntity;
->>>>>>> Stashed changes
         }
         catch (Exception ex)
         {
             Log.Error(ex);
-<<<<<<< Updated upstream
-            exitUpdater(ex.Message);
-            return;
-=======
             await exitUpdater(ex.Message);
             return null;
->>>>>>> Stashed changes
         }
     }
 
