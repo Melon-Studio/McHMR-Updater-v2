@@ -117,7 +117,7 @@
     <Compile Include="core\utils\ConfigurationCheck.cs" />
     <Compile Include="core\utils\ConfigureReadAndWriteUtil.cs" />
     <Compile Include="core\utils\FileCoreUtil.cs" />
-    <Compile Include="core\utils\NoFileUtik.cs" />
+    <Compile Include="core\utils\NoFileUtil.cs" />
     <Compile Include="core\utils\RestSharpClient.cs" />
     <Compile Include="GlobalExceptionHandleWindow.xaml.cs">
       <DependentUpon>GlobalExceptionHandleWindow.xaml</DependentUpon>

@@ -78,7 +78,7 @@ public partial class MainWindow : FluentWindow
         // 本地校验
         List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
         //删除服务器不存在的文件
-        NoFileUtik noFile = new NoFileUtik();
+        NoFileUtil noFile = new NoFileUtil();
         List<string> noFileList = await noFile.CheckFiles(hashLits.hashList, hashLits.whiteList,gamePath);
         foreach (string file in noFileList)
         {

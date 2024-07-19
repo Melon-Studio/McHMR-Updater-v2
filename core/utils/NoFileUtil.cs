@@ -9,7 +9,7 @@ using System.Windows.Documents;
 
 namespace McHMR_Updater_v2.core.utils
 {
-    public class NoFileUtik
+    public class NoFileUtil
     {
          public async Task<List<string>> CheckFiles(List<HashEntity> hashPath, string whiteList, string fileDir)
         {
