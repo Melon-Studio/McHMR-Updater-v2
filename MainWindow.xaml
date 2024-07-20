@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:McHMR_Updater_v2"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" Loaded="FluentWindow_Loaded" ResizeMode="NoResize">
+        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ContentRendered="FluentWindow_ContentRendered">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition />
@@ -47,7 +47,7 @@
                 Foreground="#34495e"
                 Height="10" 
                 VerticalAlignment="Bottom" 
-                Margin="0,0,0,20" />
+                Margin="0,0,0,20" Visibility="Hidden" />
             <ui:TextBlock 
                 Grid.Column="2" 
                 Text="10Mb/s" 
@@ -55,7 +55,7 @@
                 VerticalAlignment="Bottom" 
                 HorizontalAlignment="Left" 
                 Margin="20,0,0,18" 
-                FontSize="12" />
+                FontSize="12" Visibility="Hidden" />
         </Grid>
     </Grid>
 </ui:FluentWindow>

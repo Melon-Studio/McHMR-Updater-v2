@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
+using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
-using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
 using Newtonsoft.Json;
@@ -24,6 +23,7 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
+
     private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
     public MainWindow()
@@ -36,7 +36,7 @@ public partial class MainWindow : FluentWindow
         };
     }
 
-    private void InitializationCheck() 
+    private void InitializationCheck()
     {
         // 检查McHMR配置文件
         new ConfigurationCheck().check();
@@ -55,10 +55,10 @@ public partial class MainWindow : FluentWindow
             Window startWindow = new StartWindow();
             startWindow.ShowDialog();
         }
-        
+
     }
 
-    private async void FluentWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
     {
         // 初始化
         progressBar.Visibility = Visibility.Collapsed;
@@ -67,19 +67,38 @@ public partial class MainWindow : FluentWindow
         InitializationCheck();
         titleBar.Title = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
         // 网络检测
-        if (!NetworkInterface.GetIsNetworkAvailable())
+        if (!IsConnectionAvailable())
         {
-            throw new NetworkNotConnectedException("网络未连接");
+            Log.Error("网络未连接");
+            await exitUpdater("网络未连接，程序即将退出");
+        }
+        // 服务器连接测试
+        try
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage response = await client.GetAsync(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
+                if (!response.IsSuccessStatusCode)
+                {
+                    Log.Error("无法连接至服务器");
+                    await exitUpdater("无法连接至服务器，请联系服主");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("无法连接至服务器: " + ex.Message);
+            await exitUpdater("无法连接至服务器，请联系服主");
         }
         // 判断更新
-        judgmentUpdate();
+        await judgmentUpdate();
         // 请求最新版本哈希列表
-        ListEntity hashLits = await requestDifferenceList();
+        ListEntity hashList = await requestDifferenceList();
         // 本地校验
-        List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
+        List<string> inconsistentFile = await differentialFiles(hashList.hashList, hashList.whiteList);
         //删除服务器不存在的文件
         NoFileUtil noFile = new NoFileUtil();
-        List<string> noFileList = await noFile.CheckFiles(hashLits.hashList, hashLits.whiteList,gamePath);
+        List<string> noFileList = await noFile.CheckFiles(hashList.hashList, hashList.whiteList, gamePath);
         foreach (string file in noFileList)
         {
             File.Delete(file);
@@ -87,7 +106,7 @@ public partial class MainWindow : FluentWindow
         // 请求增量包
         var jsonBodyObject = new { fileList = inconsistentFile };
         string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
-        await client.DownloadIncrementalPackage("/update/GenerateIncrementalPackage",jsonBody,gamePath + "\\inconsistentFile");
+        await client.DownloadIncrementalPackage("/update/GenerateIncrementalPackage", jsonBody, gamePath + "\\inconsistentFile");
         // 覆盖安装本地
         using (ZipFile zip = ZipFile.Read(gamePath + "\\inconsistentFile"))
         {
@@ -98,7 +117,7 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private async void judgmentUpdate()
+    private async Task judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
@@ -107,10 +126,10 @@ public partial class MainWindow : FluentWindow
         {
             token = await new TokenManager(client).getToken();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Log.Error(ex);
-            exitUpdater(ex.Message);
+            await exitUpdater(ex.Message);
             return;
         }
 
@@ -131,7 +150,7 @@ public partial class MainWindow : FluentWindow
             if (new Version(localVersion) > new Version(serverVersion.data.latestVersion))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
-                startLauncher();
+                await startLauncher();
                 return;
             }
             tipText.Text = "检测到更新，正在获取差异文件";
@@ -139,7 +158,7 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             Log.Error(ex);
-            exitUpdater(ex.Message);
+            await exitUpdater(ex.Message);
             return;
         }
     }
@@ -157,19 +176,18 @@ public partial class MainWindow : FluentWindow
             listEntity.hashList = versionHashList.data;
             listEntity.whiteList = whitelist.data;
             return listEntity;
-
         }
 
 
         catch (Exception ex)
         {
             Log.Error(ex);
-            exitUpdater(ex.Message);
+            await exitUpdater(ex.Message);
             return null;
         }
     }
 
-    private async void startLauncher()
+    private async Task startLauncher()
     {
         Process.Start(new ConfigurationCheck().getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
         await Task.Delay(3000);
@@ -177,12 +195,20 @@ public partial class MainWindow : FluentWindow
         return;
     }
 
-    private async void exitUpdater(string tip)
+    private async Task exitUpdater(string tip)
     {
         tipText.Text = tip;
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
-        return;
+    }
+
+    [DllImport("wininet.dll", SetLastError = true)]
+    private static extern bool InternetGetConnectedState(out int description, int reservedValue);
+
+    public static bool IsConnectionAvailable()
+    {
+        int description;
+        return InternetGetConnectedState(out description, 0);
     }
 
     private async Task<List<string>> differentialFiles(List<HashEntity> laset, string whitelist)
@@ -212,4 +238,6 @@ public partial class MainWindow : FluentWindow
         });
         return files;
     }
+
+
 }

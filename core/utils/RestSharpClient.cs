@@ -1,25 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using RestSharp;
-using RestSharp.Authenticators;
 using Downloader;
 using log4net;
+using Newtonsoft.Json;
+using RestSharp;
 
 namespace McHMR_Updater_v2.core.utils;
 
 public class RestApiResult<T>
 {
-    public int code { get; set; }
-    public string msg { get; set; }
-    public T data { get; set; }
+    public int code
+    {
+        get; set;
+    }
+    public string msg
+    {
+        get; set;
+    }
+    public T data
+    {
+        get; set;
+    }
 
-    public RestApiResult(string msg) {
+    public RestApiResult(string msg)
+    {
         this.msg = msg;
     }
 
@@ -56,14 +62,15 @@ public class RestSharpClient
                 _client.AddDefaultHeader("Authorization", "Bearer " + token);
             }
 
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.Error(ex);
             throw ex;
         }
     }
 
-    public async Task<RestApiResult<T>> GetAsync<T>(string url, string token=null)
+    public async Task<RestApiResult<T>> GetAsync<T>(string url, string token = null)
     {
         if (token != null)
         {
@@ -211,7 +218,7 @@ public class RestSharpClient
         return new DownloadService(downloadOpt);
     }
 
-  public async Task DownloadIncrementalPackage(string url, string json, string path, string token = null)
+    public async Task DownloadIncrementalPackage(string url, string json, string path, string token = null)
     {
         if (token != null)
         {
