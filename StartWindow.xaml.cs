@@ -6,7 +6,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using log4net;
-using McHMR_Updater_v2.core;
 using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
