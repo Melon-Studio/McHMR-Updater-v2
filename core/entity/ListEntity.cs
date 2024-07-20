@@ -13,6 +13,5 @@ namespace McHMR_Updater_v2.core.entity
         {
             get; set;
         }
-
     }
 }

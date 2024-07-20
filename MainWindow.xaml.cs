@@ -23,7 +23,6 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
-    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
     private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
@@ -58,7 +57,6 @@ public partial class MainWindow : FluentWindow
         }
 
     }
-
 
     private async void FluentWindow_ContentRendered(object sender, EventArgs e)
     {
@@ -114,7 +112,7 @@ public partial class MainWindow : FluentWindow
         {
             foreach (ZipEntry entry in zip)
             {
-                entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
+                entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently); 
             }
         }
     }
