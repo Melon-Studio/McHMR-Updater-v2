@@ -25,6 +25,8 @@ public partial class MainWindow : FluentWindow
     private RestSharpClient client;
     private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
+    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
+
     public MainWindow()
     {
         InitializeComponent();
