@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Net.NetworkInformation;
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
@@ -24,6 +25,7 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
+    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
     private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
@@ -37,7 +39,7 @@ public partial class MainWindow : FluentWindow
         };
     }
 
-    private void InitializationCheck() 
+    private void InitializationCheck()
     {
         // 检查McHMR配置文件
         new ConfigurationCheck().check();
@@ -56,7 +58,7 @@ public partial class MainWindow : FluentWindow
             Window startWindow = new StartWindow();
             startWindow.ShowDialog();
         }
-        
+
     }
 
 
@@ -128,7 +130,7 @@ public partial class MainWindow : FluentWindow
         {
             token = await new TokenManager(client).getToken();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Log.Error(ex);
             await exitUpdater(ex.Message);
@@ -179,6 +181,8 @@ public partial class MainWindow : FluentWindow
             listEntity.whiteList = whitelist.data;
             return listEntity;
         }
+
+
         catch (Exception ex)
         {
             Log.Error(ex);
@@ -239,5 +243,5 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
-    
+
 }

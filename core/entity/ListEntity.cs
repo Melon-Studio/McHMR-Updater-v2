@@ -4,15 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace McHMR_Updater_v2.core.entity;
-public class ListEntity
+//本类的最大作用就是用来返回在获取白名单列表和哈希文件列表时返回的多个数据
+namespace McHMR_Updater_v2.core.entity
 {
-    public List<HashEntity> hashList
+    internal class ListEntity
     {
-        get; set;
-    }
-    public string whiteList
-    {
-        get; set;
+        public List<HashEntity> hashList { get; set; }
+        public string whiteList { get; set; }
+
     }
 }
