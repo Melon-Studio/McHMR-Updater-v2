@@ -54,7 +54,6 @@ namespace McHMR_Updater_v2.core.utils
 
             return notInListFiles;
         }
-
         private void AddDirectoryFilesToSet(string directory, HashSet<string> fileSet, string fileDir)
         {
             string[] files = Directory.GetFiles(fileDir + "\\" + directory, "*", SearchOption.AllDirectories);
