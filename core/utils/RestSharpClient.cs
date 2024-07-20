@@ -1,23 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using RestSharp;
-using RestSharp.Authenticators;
 using Downloader;
 using log4net;
+using Newtonsoft.Json;
+using RestSharp;
 
 namespace McHMR_Updater_v2.core.utils;
 
 public class RestApiResult<T>
 {
-    public int code { get; set; }
-    public string msg { get; set; }
-    public T data { get; set; }
+    public int code
+    {
+        get; set;
+    }
+    public string msg
+    {
+        get; set;
+    }
+    public T data
+    {
+        get; set;
+    }
 
     public RestApiResult(string msg)
     {

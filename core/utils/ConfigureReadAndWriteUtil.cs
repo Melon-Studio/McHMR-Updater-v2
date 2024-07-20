@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using log4net;
 using McHMR_Updater_v2.core.entity;
 using Newtonsoft.Json;
@@ -102,7 +98,7 @@ public class ConfigureReadAndWriteUtil
                 throw new ArgumentException($"在{apiEntity.GetType().Name}中找不到属性 '{configKey}'");
             }
 
-            propertyInfo.SetValue( apiEntity, value, null );
+            propertyInfo.SetValue(apiEntity, value, null);
             string updatedConfigContent = JsonConvert.SerializeObject(apiEntity, Formatting.Indented);
             File.WriteAllText(configPath, updatedConfigContent);
         }

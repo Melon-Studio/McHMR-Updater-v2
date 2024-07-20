@@ -1,11 +1,9 @@
-﻿using McHMR_Updater_v2.core.entity;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Documents;
+using McHMR_Updater_v2.core.entity;
 
 namespace McHMR_Updater_v2.core.utils
 {

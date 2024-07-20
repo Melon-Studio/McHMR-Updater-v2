@@ -1,21 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using log4net;
-using McHMR_Updater_v2.core;
 using McHMR_Updater_v2.core.customException;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
@@ -51,8 +41,8 @@ public partial class StartWindow : FluentWindow
         // 初始化
         resultMsg.Text = "";
         apiInput.BorderBrush = base.BorderBrush;
-        launcherInput.BorderBrush= base.BorderBrush;
-        if (BtnStatus == 1) 
+        launcherInput.BorderBrush = base.BorderBrush;
+        if (BtnStatus == 1)
         {
             this.Close();
         }
@@ -135,7 +125,7 @@ public partial class StartWindow : FluentWindow
     {
         switch (Attributes)
         {
-            case("code"):
+            case ("code"):
                 return JsonConvert.SerializeObject(restApiResult.code);
             case ("msg"):
                 return JsonConvert.SerializeObject(restApiResult.msg);

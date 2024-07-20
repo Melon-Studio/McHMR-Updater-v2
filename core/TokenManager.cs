@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using log4net;
 using McHMR_Updater_v2.core.entity;
@@ -33,7 +30,7 @@ public class TokenManager
                 throw new ArgumentException("API 地址无效");
             }
             tokenEntity = await asyncGetToken();
-            
+
             ConfigureReadAndWriteUtil.SetConfigValue("token", tokenEntity.token);
 
             return tokenEntity.token;
@@ -50,7 +47,8 @@ public class TokenManager
         return token;
     }
 
-    private async Task<TokenEntity> asyncGetToken() {
+    private async Task<TokenEntity> asyncGetToken()
+    {
         try
         {
             TokenEntity entity = new TokenEntity();
