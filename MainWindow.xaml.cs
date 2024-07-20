@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Net.NetworkInformation;
-using System.Threading.Tasks;
-using System.Windows;
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
@@ -29,6 +27,8 @@ public partial class MainWindow : FluentWindow
     private RestSharpClient client;
     private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
+    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
+
     public MainWindow()
     {
         InitializeComponent();
@@ -39,7 +39,7 @@ public partial class MainWindow : FluentWindow
         };
     }
 
-    private void InitializationCheck() 
+    private void InitializationCheck()
     {
         // 检查McHMR配置文件
         new ConfigurationCheck().check();
@@ -58,7 +58,7 @@ public partial class MainWindow : FluentWindow
             Window startWindow = new StartWindow();
             startWindow.ShowDialog();
         }
-        
+
     }
 
 
@@ -97,13 +97,12 @@ public partial class MainWindow : FluentWindow
         // 判断更新
         await judgmentUpdate();
         // 请求最新版本哈希列表
-        ListEntity hashLits = await requestDifferenceList();
+        ListEntity hashList = await requestDifferenceList();
         // 本地校验
-        List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
+        List<string> inconsistentFile = await differentialFiles(hashList.hashList, hashList.whiteList);
         //删除服务器不存在的文件
         NoFileUtil noFile = new NoFileUtil();
-        List<string> noFileList = await noFile.CheckFiles(hashLits.hashList, hashLits.whiteList, gamePath);
-
+        List<string> noFileList = await noFile.CheckFiles(hashList.hashList, hashList.whiteList, gamePath);
         foreach (string file in noFileList)
         {
             File.Delete(file);
@@ -131,7 +130,7 @@ public partial class MainWindow : FluentWindow
         {
             token = await new TokenManager(client).getToken();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Log.Error(ex);
             await exitUpdater(ex.Message);
@@ -244,5 +243,5 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
-    
+
 }

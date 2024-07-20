@@ -19,7 +19,8 @@ public class RestApiResult<T>
     public string msg { get; set; }
     public T data { get; set; }
 
-    public RestApiResult(string msg) {
+    public RestApiResult(string msg)
+    {
         this.msg = msg;
     }
 
@@ -56,14 +57,15 @@ public class RestSharpClient
                 _client.AddDefaultHeader("Authorization", "Bearer " + token);
             }
 
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.Error(ex);
             throw ex;
         }
     }
 
-    public async Task<RestApiResult<T>> GetAsync<T>(string url, string token=null)
+    public async Task<RestApiResult<T>> GetAsync<T>(string url, string token = null)
     {
         if (token != null)
         {
@@ -211,7 +213,7 @@ public class RestSharpClient
         return new DownloadService(downloadOpt);
     }
 
-  public async Task DownloadIncrementalPackage(string url, string json, string path, string token = null)
+    public async Task DownloadIncrementalPackage(string url, string json, string path, string token = null)
     {
         if (token != null)
         {

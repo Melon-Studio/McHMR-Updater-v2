@@ -5,26 +5,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace McHMR_Updater_v2.core.utils
+namespace McHMR_Updater_v2.core.utils;
+public class FileHashUtil
 {
-    public class FileHashUtil
+    //MD5方式计算文件哈希值
+    public string CalculateHash(string filePath)
     {
-        //MD5方式计算文件哈希值
-        public string CalculateHash(string filePath)
+        if (!File.Exists(filePath))
         {
-            if (!File.Exists(filePath))
-            {
-                return string.Empty;
-            }
+            return string.Empty;
+        }
 
-            using (var md5 = System.Security.Cryptography.MD5.Create())
+        using (var md5 = System.Security.Cryptography.MD5.Create())
+        {
+            using (var stream = File.OpenRead(filePath))
             {
-                using (var stream = File.OpenRead(filePath))
-                {
-                    var hash = md5.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                }
+                var hash = md5.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
             }
         }
     }
 }
+

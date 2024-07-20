@@ -11,7 +11,7 @@ namespace McHMR_Updater_v2.core.utils
 {
     public class NoFileUtil
     {
-         public async Task<List<string>> CheckFiles(List<HashEntity> hashPath, string whiteList, string fileDir)
+        public async Task<List<string>> CheckFiles(List<HashEntity> hashPath, string whiteList, string fileDir)
         {
             List<string> notInListFiles = new List<string>();
             HashSet<string> tempWhiteListSet = new HashSet<string>();
@@ -24,7 +24,7 @@ namespace McHMR_Updater_v2.core.utils
             {
                 if (Directory.Exists(entry))
                 {
-                    AddDirectoryFilesToSet(entry, tempWhiteListSet,fileDir);
+                    AddDirectoryFilesToSet(entry, tempWhiteListSet, fileDir);
                 }
                 else
                 {
@@ -35,14 +35,14 @@ namespace McHMR_Updater_v2.core.utils
             foreach (string entry in tempWhiteListSet)
             {
                 string relativePath = fileDir + "\\" + entry;
-                whiteListSet.Add(relativePath.Replace("/","\\"));
+                whiteListSet.Add(relativePath.Replace("/", "\\"));
             }
 
-           foreach (HashEntity entry in hashPath)
-           {
-               string relativePath = fileDir + "\\" + entry.filePath;
-               hashPathSet.Add(relativePath.Replace("/","\\"));
-           }
+            foreach (HashEntity entry in hashPath)
+            {
+                string relativePath = fileDir + "\\" + entry.filePath;
+                hashPathSet.Add(relativePath.Replace("/", "\\"));
+            }
 
             string[] filesInParam3 = Directory.GetFiles(fileDir, "*", SearchOption.AllDirectories);
 
@@ -57,7 +57,7 @@ namespace McHMR_Updater_v2.core.utils
             return notInListFiles;
         }
 
-        private void AddDirectoryFilesToSet(string directory, HashSet<string> fileSet,string fileDir)
+        private void AddDirectoryFilesToSet(string directory, HashSet<string> fileSet, string fileDir)
         {
             string[] files = Directory.GetFiles(fileDir + "\\" + directory, "*", SearchOption.AllDirectories);
 
