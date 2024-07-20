@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
 using McHMR_Updater_v2.core.entity;
@@ -23,6 +24,8 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
+
+    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
 
     public MainWindow()
     {
@@ -92,13 +95,12 @@ public partial class MainWindow : FluentWindow
         // 判断更新
         await judgmentUpdate();
         // 请求最新版本哈希列表
-        requestDifferenceList();
+        ListEntity hashList = await requestDifferenceList();
         // 本地校验
-
-        List<string> inconsistentFile = await differentialFiles(hashLits.hashList, hashLits.whiteList);
+        List<string> inconsistentFile = await differentialFiles(hashList.hashList, hashList.whiteList);
         //删除服务器不存在的文件
         NoFileUtil noFile = new NoFileUtil();
-        List<string> noFileList = await noFile.CheckFiles(hashLits.hashList, hashLits.whiteList, gamePath);
+        List<string> noFileList = await noFile.CheckFiles(hashList.hashList, hashList.whiteList, gamePath);
         foreach (string file in noFileList)
         {
             File.Delete(file);
@@ -163,7 +165,7 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private async void requestDifferenceList()
+    private async Task<ListEntity> requestDifferenceList()
     {
         try
         {
@@ -209,31 +211,30 @@ public partial class MainWindow : FluentWindow
         return InternetGetConnectedState(out description, 0);
     }
 
-    private async Task<string[]> differentialFiles(List<HashEntity> laset, string whitelist)
+    private async Task<List<string>> differentialFiles(List<HashEntity> laset, string whitelist)
     {
         string[] whitelistArrayBefore = whitelist.Split(Environment.NewLine.ToCharArray());
         string[] whitelistArrayAfter = whitelistArrayBefore.Where(s => !string.IsNullOrEmpty(s)).ToArray();
-        string[] files = new string[] { };
+        List<string> files = new List<string>();
+
         await Task.Run(() =>
         {
-            // 获取本地匹配目录
-            string matchingDir = new ConfigurationCheck().getCurrentDir();
-            // 分析 whitelist 中的是目录还是文件
-            ArrayList whitelistDir = new ArrayList();
-            ArrayList whitelistFiles = new ArrayList();
+            // 遍历 laset 列表，检查文件哈希值是否一致
+            foreach (HashEntity hashEntity in laset)
+            {
+                string absoluteFilePath = gamePath + hashEntity.filePath;
+                absoluteFilePath = absoluteFilePath.Replace('/', '\\');
 
-            whitelistDir.AddRange(
-                whitelistArrayAfter
-                .Where(s => Directory.Exists(s))
-                .ToArray()
-            );
+                // 计算文件当前哈希值
+                FileHashUtil fileHash = new FileHashUtil();
+                string currentFileHash = fileHash.CalculateHash(absoluteFilePath);
 
-            whitelistFiles.AddRange(
-                whitelistArrayAfter
-                .Where(s => File.Exists(s))
-                .ToArray()
-            );
-
+                // 如果哈希值不一致，将文件路径添加到 files 列表中
+                if (currentFileHash != hashEntity.fileHash)
+                {
+                    files.Add(hashEntity.filePath);
+                }
+            }
         });
         return files;
     }

@@ -211,4 +211,26 @@ public class RestSharpClient
         return new DownloadService(downloadOpt);
     }
 
+    public async Task DownloadIncrementalPackage(string url, string json, string path, string token = null)
+    {
+        if (token != null)
+        {
+            _client.AddDefaultHeader("Authorization", "Bearer " + token);
+        }
+
+        var request = new RestRequest(url, Method.Post);
+        request.AddHeader("Content-Type", "application/json");
+        request.AddStringBody(json, DataFormat.Json);
+
+        var response = await _client.ExecuteAsync(request);
+
+        using (var responseStream = new MemoryStream(response.RawBytes))
+        {
+            using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await responseStream.CopyToAsync(fileStream);
+            }
+        }
+    }
+
 }
