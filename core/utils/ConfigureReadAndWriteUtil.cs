@@ -11,7 +11,7 @@ public class ConfigureReadAndWriteUtil
 
     public static string GetConfigValue(string configKey)
     {
-        string configPath = new ConfigurationCheck().getConfigFile();
+        string configPath = ConfigurationCheck.getConfigFile();
 
         if (!File.Exists(configPath))
         {
@@ -72,7 +72,7 @@ public class ConfigureReadAndWriteUtil
 
     public static void SetConfigValue(string configKey, string value)
     {
-        string configPath = new ConfigurationCheck().getConfigFile();
+        string configPath = ConfigurationCheck.getConfigFile();
 
         if (!File.Exists(configPath))
         {

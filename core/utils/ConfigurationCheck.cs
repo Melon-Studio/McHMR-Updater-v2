@@ -6,15 +6,21 @@ public class ConfigurationCheck
 {
     public static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-    public void check()
+    public static void check()
     {
         string currentDirectory = Directory.GetCurrentDirectory();
         string configDirectory = currentDirectory + "\\mchmr";
+        string tempDirectory = currentDirectory + "\\mchmr\\temp";
         string apiConfigFile = configDirectory + "\\config.json";
 
         if (!Directory.Exists(configDirectory))
         {
             Directory.CreateDirectory(configDirectory);
+        }
+
+        if (!Directory.Exists(tempDirectory))
+        {
+            Directory.CreateDirectory(tempDirectory);
         }
 
         if (!File.Exists(apiConfigFile))
@@ -23,21 +29,28 @@ public class ConfigurationCheck
         }
     }
 
-    public string getCurrentDir()
+    public static string getCurrentDir()
     {
         return Directory.GetCurrentDirectory();
     }
 
-    public string getConfigDir()
+    public static string getConfigDir()
     {
-        string currentDirectory = Directory.GetCurrentDirectory();
-        return currentDirectory + "\\mchmr";
+        return getCurrentDir() + "\\mchmr";
     }
 
-    public string getConfigFile()
+    public static string getConfigFile()
     {
-        string currentDirectory = Directory.GetCurrentDirectory();
-        string configDirectory = currentDirectory + "\\mchmr";
-        return configDirectory + "\\config.json";
+        return getConfigDir() + "\\config.json";
+    }
+
+    public static string getTempDir()
+    {
+        return getConfigDir() + "\\temp";
+    }
+
+    public static string getGameDir()
+    {
+        return getConfigDir() + "\\.miencraft";
     }
 }

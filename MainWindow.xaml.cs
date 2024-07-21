@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Shapes;
+using Downloader;
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
@@ -24,7 +30,7 @@ public partial class MainWindow : FluentWindow
     private string token;
     private RestSharpClient client;
 
-    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
+    private readonly string gamePath = ConfigurationCheck.getCurrentDir() + "\\.minecraft";
 
     public MainWindow()
     {
@@ -39,7 +45,7 @@ public partial class MainWindow : FluentWindow
     private void InitializationCheck()
     {
         // 检查McHMR配置文件
-        new ConfigurationCheck().check();
+        ConfigurationCheck.check();
         // 检查API配置
         try
         {
@@ -104,17 +110,52 @@ public partial class MainWindow : FluentWindow
             File.Delete(file);
         }
         // 请求增量包
-        var jsonBodyObject = new { fileList = inconsistentFile };
-        string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
-        await client.DownloadIncrementalPackage("/update/GenerateIncrementalPackage", jsonBody, gamePath + "\\inconsistentFile");
-        // 覆盖安装本地
-        using (ZipFile zip = ZipFile.Read(gamePath + "\\inconsistentFile"))
+        await requestIncrementalPackage(inconsistentFile);
+    }
+
+    private async void onDownloadFileCompleted(object sender, AsyncCompletedEventArgs e) 
+    {
+        await Dispatcher.BeginInvoke(new Action(async delegate
         {
-            foreach (ZipEntry entry in zip)
+            if (e.Error != null)
             {
-                entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently); 
+                Log.Error(e.Error);
+                await exitUpdater(e.Error.Message);
+                return;
             }
+
+            progressBar.Visibility = Visibility.Collapsed;
+            progressBarSpeed.Visibility = Visibility.Collapsed;
+
+            tipText.Text = "正在安装新版本，请稍后";
+
+            await install();
+        }));
+    }
+    private void onDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) 
+    {
+        progressBar.Value = e.ProgressPercentage;
+        double speedInBps = e.AverageBytesPerSecondSpeed;
+
+        double speedInKbps = speedInBps / 1024;
+
+        string speedDisplay;
+        if (speedInKbps >= 1000)
+        {
+            double speedInMbps = speedInKbps / 1024;
+            speedDisplay = $"{speedInMbps:F2} MB/s";
         }
+        else
+        {
+            speedDisplay = $"{speedInKbps:F2} KB/s";
+        }
+
+        progressBarSpeed.Text = speedDisplay;
+    }
+    private void OnDownloadStarted(object sender, DownloadStartedEventArgs e)
+    {
+        progressBar.Visibility = Visibility.Visible;
+        progressBarSpeed.Visibility = Visibility.Visible;
     }
 
     private async Task judgmentUpdate()
@@ -189,7 +230,7 @@ public partial class MainWindow : FluentWindow
 
     private async Task startLauncher()
     {
-        Process.Start(new ConfigurationCheck().getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
+        Process.Start(ConfigurationCheck.getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
         return;
@@ -197,6 +238,7 @@ public partial class MainWindow : FluentWindow
 
     private async Task exitUpdater(string tip)
     {
+        Log.Info("Exit: " + tip);
         tipText.Text = tip;
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
@@ -239,5 +281,54 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
+    string path = null;
 
+    private async Task requestIncrementalPackage(List<string> inconsistentFile)
+    {
+        tipText.Text = "正在等待服务器响应";
+        var jsonBodyObject = new { fileList = inconsistentFile };
+        string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
+
+        var packageHash = await client.PostAsync<PackageEntity>("/update/GenerateIncrementalPackage", jsonBody);
+
+        try
+        {
+            var downloader = client.GetDownloadService();
+
+            path = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash +".zip";
+
+            if (!File.Exists(path))
+            {
+                File.Create(path).Dispose();
+            }
+
+            downloader.DownloadStarted += OnDownloadStarted;
+            downloader.DownloadProgressChanged += onDownloadProgressChanged;
+            //downloader.DownloadFileCompleted += onDownloadFileCompleted;
+            
+            tipText.Text = "正在下载最新版本";
+
+            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileHash=" + packageHash.data.packageHash, path);
+        }catch (Exception ex)
+        {
+            Log.Error(ex);
+            await exitUpdater(ex.Message);
+        }
+    }
+
+    private async Task install()
+    {
+        //await Task.Run(() =>
+        //{
+        //    using (ZipFile zip = ZipFile.Read(path))
+        //    {
+        //        foreach (ZipEntry entry in zip)
+        //        {
+        //            entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
+        //        }
+        //    }
+        //});
+
+        //tipText.Text = "安装完成";
+    }
 }
