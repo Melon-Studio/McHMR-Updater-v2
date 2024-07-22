@@ -1,6 +1,6 @@
-﻿using System.Windows;
+﻿using log4net;
+using System.Windows;
 using System.Windows.Threading;
-using log4net;
 
 namespace McHMR_Updater_v2;
 
