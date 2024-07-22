@@ -96,7 +96,7 @@ public partial class StartWindow : FluentWindow
                 btnLoadding.Visibility = Visibility.Hidden;
 
                 // 保存至配置
-                FileStream fileStream = new FileStream(new ConfigurationCheck().getConfigFile(), FileMode.Truncate);
+                FileStream fileStream = new FileStream(ConfigurationCheck.getConfigFile(), FileMode.Truncate);
                 StreamWriter writer = new StreamWriter(fileStream, Encoding.UTF8);
                 writer.Write(getTaskContent(apiResponse, "data"));
 
@@ -165,7 +165,7 @@ public partial class StartWindow : FluentWindow
             selectedFilePath = openFileDialog.FileName;
 
             // 检查文件是否在程序目录中
-            string appDir = new ConfigurationCheck().getCurrentDir();
+            string appDir = ConfigurationCheck.getCurrentDir();
 
             if (!IsFileInDirectory(selectedFilePath, appDir))
             {
