@@ -1,13 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Downloader;
+﻿using Downloader;
 using log4net;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace McHMR_Updater_v2.core.utils;
 

@@ -1,16 +1,16 @@
-﻿using System;
+﻿using log4net;
+using McHMR_Updater_v2.core.customException;
+using McHMR_Updater_v2.core.entity;
+using McHMR_Updater_v2.core.utils;
+using Microsoft.Win32;
+using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
-using log4net;
-using McHMR_Updater_v2.core.customException;
-using McHMR_Updater_v2.core.entity;
-using McHMR_Updater_v2.core.utils;
-using Microsoft.Win32;
-using Newtonsoft.Json;
 using Wpf.Ui.Controls;
 
 namespace McHMR_Updater_v2;
