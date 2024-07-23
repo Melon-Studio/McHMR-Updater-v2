@@ -25,8 +25,8 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
-
     private readonly string gamePath = ConfigurationCheck.getCurrentDir() + "\\.minecraft";
+    private string inconsistentPath;
 
     public MainWindow()
     {
@@ -93,7 +93,7 @@ public partial class MainWindow : FluentWindow
             await exitUpdater("无法连接至服务器，请联系服主");
         }
         // 判断更新
-        if(await judgmentUpdate()) return;
+        if (await judgmentUpdate()) return;
         // 请求最新版本哈希列表
         ListEntity hashList = await requestDifferenceList();
         // 本地校验
@@ -106,9 +106,9 @@ public partial class MainWindow : FluentWindow
             File.Delete(file);
         }
         // 请求增量包
-        string inconsistentFilePath = await requestIncrementalPackage(inconsistentFile);
+        await requestIncrementalPackage(inconsistentFile);
         // 覆盖安装
-        await install(inconsistentFilePath);
+        //await install(inconsistentFilePath);
         // 启动游戏
         tipText.Text = "安装完成，正在打开启动器";
         await startLauncher();
@@ -116,22 +116,26 @@ public partial class MainWindow : FluentWindow
 
     private async void onDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
     {
-        await Dispatcher.BeginInvoke(new Action(async delegate
+        await progressBar.Dispatcher.Invoke(async () =>
         {
-            if (e.Error != null)
-            {
-                Log.Error(e.Error);
-                await exitUpdater(e.Error.Message);
-                return;
-            }
+            Action method = new Action(async delegate
+                        {
+                            if (e.Error != null)
+                            {
+                                Log.Error(e.Error);
+                                await exitUpdater(e.Error.Message);
+                                return;
+                            }
 
-            progressBar.Visibility = Visibility.Collapsed;
-            progressBarSpeed.Visibility = Visibility.Collapsed;
+                            progressBar.Visibility = Visibility.Collapsed;
+                            progressBarSpeed.Visibility = Visibility.Collapsed;
 
-            tipText.Text = "正在安装新版本，请稍后";
+                            tipText.Text = "正在安装新版本，请稍后";
 
-            await install(path);
-        }));
+                            await install();
+                        });
+            await Dispatcher.BeginInvoke(method);
+        });
     }
     private void onDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
     {
@@ -288,9 +292,7 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
-    string path = null;
-
-    private async Task<string> requestIncrementalPackage(List<string> inconsistentFile)
+    private async Task requestIncrementalPackage(List<string> inconsistentFile)
     {
         tipText.Text = "正在等待服务器响应";
         var jsonBodyObject = new { fileList = inconsistentFile };
@@ -302,21 +304,20 @@ public partial class MainWindow : FluentWindow
         {
             var downloader = client.GetDownloadService();
 
-            path = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash + ".zip";
+            inconsistentPath = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash + ".zip";
 
-            if (!File.Exists(path))
+            if (!File.Exists(inconsistentPath))
             {
-                File.Create(path).Dispose();
+                File.Create(inconsistentPath).Dispose();
             }
 
             downloader.DownloadStarted += OnDownloadStarted;
             downloader.DownloadProgressChanged += onDownloadProgressChanged;
-            //downloader.DownloadFileCompleted += onDownloadFileCompleted;
+            downloader.DownloadFileCompleted += onDownloadFileCompleted;
 
             tipText.Text = "正在下载最新版本";
 
-            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileHash=" + packageHash.data.packageHash, path);
-            return path;
+            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileHash=" + packageHash.data.packageHash, inconsistentPath);
         }
         catch (Exception ex)
         {
@@ -325,20 +326,20 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private async Task install(string path)
+    private async Task install()
     {
         await Task.Run(() =>
         {
-            using (ZipFile zip = ZipFile.Read(path))
+            using (ZipFile zip = ZipFile.Read(inconsistentPath))
             {
                 foreach (ZipEntry entry in zip)
                 {
-                   entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
+                    entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
                 }
             }
         });
 
         tipText.Text = "安装完成";
-        File.Delete(path);
+        File.Delete(inconsistentPath);
     }
 }
