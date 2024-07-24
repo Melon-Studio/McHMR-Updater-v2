@@ -1,11 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Threading.Tasks;
-using Downloader;
+﻿using Downloader;
 using log4net;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace McHMR_Updater_v2.core.utils;
 
@@ -36,7 +36,12 @@ public class RestSharpClient
 
     private readonly RestClientOptions _options;
     private readonly RestClient _client;
-    private readonly int timeout = 30;
+    private readonly int timeout = 60;
+
+    public string baseUrl
+    {
+        get { return _options.BaseUrl.ToString(); }
+    }
 
     private string _token;
     private readonly Boolean _needToThrowGlobally;
@@ -188,14 +193,14 @@ public class RestSharpClient
         }
     }
 
-    public DownloadService DownloadFileAsync()
+    public DownloadService GetDownloadService()
     {
         WebHeaderCollection collection = new WebHeaderCollection();
         if (_token != null)
         {
             collection.Add("Authorization", "Bearer " + _token);
         }
-        collection.Add("Accept", "application/octet-stream");
+        //collection.Add("Conetent-Type", "application/octet-stream;charset=utf-8");
 
         RequestConfiguration requestConfig = new RequestConfiguration
         {
@@ -214,6 +219,8 @@ public class RestSharpClient
             Timeout = 10000,
             RequestConfiguration = requestConfig
         };
+
+        var test = new Downloader.DownloadBuilder();
 
         return new DownloadService(downloadOpt);
     }

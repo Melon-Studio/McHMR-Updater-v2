@@ -1,8 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
-using log4net;
+﻿using log4net;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
+using System;
+using System.Threading.Tasks;
 
 namespace McHMR_Updater_v2.core;
 public class TokenManager

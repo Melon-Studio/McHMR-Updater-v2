@@ -1,8 +1,8 @@
-﻿using System;
-using System.IO;
-using log4net;
+﻿using log4net;
 using McHMR_Updater_v2.core.entity;
 using Newtonsoft.Json;
+using System;
+using System.IO;
 
 namespace McHMR_Updater_v2.core.utils;
 public class ConfigureReadAndWriteUtil
@@ -11,7 +11,7 @@ public class ConfigureReadAndWriteUtil
 
     public static string GetConfigValue(string configKey)
     {
-        string configPath = new ConfigurationCheck().getConfigFile();
+        string configPath = ConfigurationCheck.getConfigFile();
 
         if (!File.Exists(configPath))
         {
@@ -72,7 +72,7 @@ public class ConfigureReadAndWriteUtil
 
     public static void SetConfigValue(string configKey, string value)
     {
-        string configPath = new ConfigurationCheck().getConfigFile();
+        string configPath = ConfigurationCheck.getConfigFile();
 
         if (!File.Exists(configPath))
         {

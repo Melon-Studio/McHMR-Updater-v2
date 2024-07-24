@@ -1,5 +1,13 @@
-﻿using System;
+﻿using Downloader;
+using Ionic.Zip;
+using log4net;
+using McHMR_Updater_v2.core;
+using McHMR_Updater_v2.core.entity;
+using McHMR_Updater_v2.core.utils;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,12 +15,6 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
-using Ionic.Zip;
-using log4net;
-using McHMR_Updater_v2.core;
-using McHMR_Updater_v2.core.entity;
-using McHMR_Updater_v2.core.utils;
-using Newtonsoft.Json;
 using Wpf.Ui.Controls;
 
 namespace McHMR_Updater_v2;
@@ -23,8 +25,8 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
-
-    private readonly string gamePath = new ConfigurationCheck().getCurrentDir() + "\\.minecraft";
+    private readonly string gamePath = ConfigurationCheck.getCurrentDir() + "\\.minecraft";
+    private string inconsistentPath;
 
     public MainWindow()
     {
@@ -39,7 +41,7 @@ public partial class MainWindow : FluentWindow
     private void InitializationCheck()
     {
         // 检查McHMR配置文件
-        new ConfigurationCheck().check();
+        ConfigurationCheck.check();
         // 检查API配置
         try
         {
@@ -91,7 +93,7 @@ public partial class MainWindow : FluentWindow
             await exitUpdater("无法连接至服务器，请联系服主");
         }
         // 判断更新
-        await judgmentUpdate();
+        if (await judgmentUpdate()) return;
         // 请求最新版本哈希列表
         ListEntity hashList = await requestDifferenceList();
         // 本地校验
@@ -104,20 +106,66 @@ public partial class MainWindow : FluentWindow
             File.Delete(file);
         }
         // 请求增量包
-        var jsonBodyObject = new { fileList = inconsistentFile };
-        string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
-        await client.DownloadIncrementalPackage("/update/GenerateIncrementalPackage", jsonBody, gamePath + "\\inconsistentFile");
-        // 覆盖安装本地
-        using (ZipFile zip = ZipFile.Read(gamePath + "\\inconsistentFile"))
-        {
-            foreach (ZipEntry entry in zip)
-            {
-                entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently); 
-            }
-        }
+        await requestIncrementalPackage(inconsistentFile);
+        // 覆盖安装
+        //await install(inconsistentFilePath);
     }
 
-    private async Task judgmentUpdate()
+    private async void onDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+    {
+        await progressBar.Dispatcher.Invoke(async () =>
+        {
+            Action method = new Action(async delegate
+                        {
+                            if (e.Error != null)
+                            {
+                                Log.Error(e.Error);
+                                await exitUpdater(e.Error.Message);
+                                return;
+                            }
+
+                            progressBar.Visibility = Visibility.Collapsed;
+                            progressBarSpeed.Visibility = Visibility.Collapsed;
+
+                            tipText.Text = "正在安装新版本，请稍后";
+
+                            await install();
+                        });
+            await Dispatcher.BeginInvoke(method);
+        });
+    }
+    private void onDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+    {
+        progressBar.Dispatcher.Invoke(() =>
+        {
+            progressBar.Value = e.ProgressPercentage;
+            double speedInBps = e.AverageBytesPerSecondSpeed;
+
+            double speedInKbps = speedInBps / 1024;
+
+            string speedDisplay;
+            if (speedInKbps >= 1000)
+            {
+                double speedInMbps = speedInKbps / 1024;
+                speedDisplay = $"{speedInMbps:F2} MB/s";
+            }
+            else
+            {
+                speedDisplay = $"{speedInKbps:F2} KB/s";
+            }
+
+            progressBarSpeed.Text = speedDisplay;
+        });
+    }
+    private void OnDownloadStarted(object sender, DownloadStartedEventArgs e)
+    {
+        progressBar.Dispatcher.Invoke(() =>
+        {
+            progressBar.Visibility = Visibility.Visible;
+            progressBarSpeed.Visibility = Visibility.Visible;
+        });
+    }
+    private async Task<Boolean> judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
@@ -130,7 +178,7 @@ public partial class MainWindow : FluentWindow
         {
             Log.Error(ex);
             await exitUpdater(ex.Message);
-            return;
+            return true;
         }
 
         client = new RestSharpClient(baseUrl, token);
@@ -147,19 +195,20 @@ public partial class MainWindow : FluentWindow
         {
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
 
-            if (new Version(localVersion) > new Version(serverVersion.data.latestVersion))
+            if (new Version(localVersion) >= new Version(serverVersion.data.latestVersion))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
                 await startLauncher();
-                return;
+                return true;
             }
             tipText.Text = "检测到更新，正在获取差异文件";
+            return false;
         }
         catch (Exception ex)
         {
             Log.Error(ex);
             await exitUpdater(ex.Message);
-            return;
+            return true;
         }
     }
 
@@ -189,7 +238,7 @@ public partial class MainWindow : FluentWindow
 
     private async Task startLauncher()
     {
-        Process.Start(new ConfigurationCheck().getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
+        Process.Start(ConfigurationCheck.getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
         return;
@@ -197,6 +246,7 @@ public partial class MainWindow : FluentWindow
 
     private async Task exitUpdater(string tip)
     {
+        Log.Info("Exit: " + tip);
         tipText.Text = tip;
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
@@ -239,5 +289,59 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
+    private async Task requestIncrementalPackage(List<string> inconsistentFile)
+    {
+        tipText.Text = "正在等待服务器响应";
+        var jsonBodyObject = new { fileList = inconsistentFile };
+        string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
 
+        var packageHash = await client.PostAsync<PackageEntity>("/update/GenerateIncrementalPackage", jsonBody);
+
+        try
+        {
+            var downloader = client.GetDownloadService();
+
+            inconsistentPath = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash + ".zip";
+
+            if (!File.Exists(inconsistentPath))
+            {
+                File.Create(inconsistentPath).Dispose();
+            }
+
+            downloader.DownloadStarted += OnDownloadStarted;
+            downloader.DownloadProgressChanged += onDownloadProgressChanged;
+            downloader.DownloadFileCompleted += onDownloadFileCompleted;
+
+            tipText.Text = "正在下载最新版本";
+
+            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileHash=" + packageHash.data.packageHash, inconsistentPath);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            await exitUpdater(ex.Message);
+        }
+    }
+
+    private async Task install()
+    {
+        await Task.Run(() =>
+        {
+            using (ZipFile zip = ZipFile.Read(inconsistentPath))
+            {
+                foreach (ZipEntry entry in zip)
+                {
+                    entry.Extract(gamePath, ExtractExistingFileAction.OverwriteSilently);
+                }
+            }
+        });
+
+        File.Delete(inconsistentPath);
+        //更新配置文件版本号
+        var version = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
+        ConfigureReadAndWriteUtil.SetConfigValue("version", version.data.latestVersion);
+        // 启动游戏
+        tipText.Text = "安装完成，正在打开启动器";
+        await startLauncher();
+    }
 }
