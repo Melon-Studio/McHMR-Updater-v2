@@ -109,6 +109,9 @@ public partial class MainWindow : FluentWindow
         await requestIncrementalPackage(inconsistentFile);
         // 覆盖安装
         //await install(inconsistentFilePath);
+        // 启动游戏
+        tipText.Text = "安装完成，正在打开启动器";
+        await startLauncher();
     }
 
     private async void onDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
@@ -195,7 +198,7 @@ public partial class MainWindow : FluentWindow
         {
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
 
-            if (new Version(localVersion) >= new Version(serverVersion.data.latestVersion))
+            if (new Version(localVersion) > new Version(serverVersion.data.latestVersion))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
                 await startLauncher();
@@ -336,12 +339,7 @@ public partial class MainWindow : FluentWindow
             }
         });
 
+        tipText.Text = "安装完成";
         File.Delete(inconsistentPath);
-        //更新配置文件版本号
-        var version = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
-        ConfigureReadAndWriteUtil.SetConfigValue("version", version.data.latestVersion);
-        // 启动游戏
-        tipText.Text = "安装完成，正在打开启动器";
-        await startLauncher();
     }
 }
