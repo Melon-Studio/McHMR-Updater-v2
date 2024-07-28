@@ -275,9 +275,23 @@ public partial class MainWindow : FluentWindow
                 string absoluteFilePath = gamePath + hashEntity.filePath;
                 absoluteFilePath = absoluteFilePath.Replace('/', '\\');
 
-                // 计算文件当前哈希值
+                // 尝试计算文件当前哈希值
                 FileHashUtil fileHash = new FileHashUtil();
-                string currentFileHash = fileHash.CalculateHash(absoluteFilePath);
+                string currentFileHash;
+
+                try
+                {
+                    // 计算文件哈希值
+                    currentFileHash = fileHash.CalculateHash(absoluteFilePath);
+                }
+                catch (IOException)
+                {
+                    // 如果文件被占用，复制一份然后计算哈希值
+                    string tempFilePath = absoluteFilePath + ".tmp";
+                    File.Copy(absoluteFilePath, tempFilePath, true);
+                    currentFileHash = fileHash.CalculateHash(tempFilePath);
+                    File.Delete(tempFilePath);
+                }
 
                 // 如果哈希值不一致，将文件路径添加到 files 列表中
                 if (currentFileHash != hashEntity.fileHash)
