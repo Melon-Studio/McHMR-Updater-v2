@@ -27,6 +27,7 @@ public partial class MainWindow : FluentWindow
     private RestSharpClient client;
     private readonly string gamePath = ConfigurationCheck.getCurrentDir() + "\\.minecraft";
     private string inconsistentPath;
+    private string version;
 
     public MainWindow()
     {
@@ -101,12 +102,27 @@ public partial class MainWindow : FluentWindow
         //删除服务器不存在的文件
         NoFileUtil noFile = new NoFileUtil();
         List<string> noFileList = await noFile.CheckFiles(hashList.hashList, hashList.whiteList, gamePath);
-        foreach (string file in noFileList)
+        if (noFileList.Count > 0)
         {
-            File.Delete(file);
+            tipText.Text = "正在删除服务端不存在的文件";
+            foreach (string file in noFileList)
+            {
+                File.Delete(file);
+            }
         }
+        await noFile.RemoveEmptyDirectories(gamePath);
         // 请求增量包
-        await requestIncrementalPackage(inconsistentFile);
+        if (inconsistentFile.Count > 0)
+        {
+            await requestIncrementalPackage(inconsistentFile);
+        }
+        else
+        {
+            tipText.Text = "暂未发现需要更新的文件，正在为您打开启动器";
+            //更新配置文件版本号
+            await updateVersion();
+            await startLauncher();
+        }
         // 覆盖安装
         //await install(inconsistentFilePath);
     }
@@ -194,8 +210,8 @@ public partial class MainWindow : FluentWindow
         try
         {
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
-
-            if (new Version(localVersion) >= new Version(serverVersion.data.latestVersion))
+            version = serverVersion.data.latestVersion;
+            if (new Version(localVersion) >= new Version(version))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
                 await startLauncher();
@@ -216,8 +232,7 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            tipText.Text = "正在分析本地客户端差异";
-
+            tipText.Text = "正在请求服务端文件信息";
             var versionHashList = await client.GetAsync<List<HashEntity>>("/update/GetLatestVersionHashList");
             var whitelist = await client.GetAsync<string>("/update/GetWhitelist");
 
@@ -263,6 +278,7 @@ public partial class MainWindow : FluentWindow
 
     private async Task<List<string>> differentialFiles(List<HashEntity> laset, string whitelist)
     {
+        tipText.Text = "正在分析本地客户端差异";
         string[] whitelistArrayBefore = whitelist.Split(Environment.NewLine.ToCharArray());
         string[] whitelistArrayAfter = whitelistArrayBefore.Where(s => !string.IsNullOrEmpty(s)).ToArray();
         List<string> files = new List<string>();
@@ -338,10 +354,14 @@ public partial class MainWindow : FluentWindow
 
         File.Delete(inconsistentPath);
         //更新配置文件版本号
-        var version = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
-        ConfigureReadAndWriteUtil.SetConfigValue("version", version.data.latestVersion);
+        await updateVersion();
         // 启动游戏
         tipText.Text = "安装完成，正在打开启动器";
         await startLauncher();
+    }
+
+    private async Task updateVersion()
+    {
+        ConfigureReadAndWriteUtil.SetConfigValue("version", version);
     }
 }
