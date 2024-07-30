@@ -21,7 +21,7 @@ namespace McHMR_Updater_v2.core.utils
             foreach (string entry in whitelistArrayAfter)
             {
                 string tempPhat = entry;
-                if (tempPhat[0] == '/')
+                if (tempPhat[0] == '/' || tempPhat[0] == '\\')
                 {
                     tempPhat = entry.Substring(1);
                 }
