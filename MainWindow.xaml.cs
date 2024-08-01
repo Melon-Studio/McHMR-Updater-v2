@@ -376,6 +376,9 @@ public partial class MainWindow : FluentWindow
 
     private async Task updateVersion()
     {
-        ConfigureReadAndWriteUtil.SetConfigValue("version", version);
+        await Task.Run(() =>
+        {
+            ConfigureReadAndWriteUtil.SetConfigValue("version", version);
+        });
     }
 }

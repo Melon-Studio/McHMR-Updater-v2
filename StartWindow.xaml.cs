@@ -44,7 +44,7 @@ public partial class StartWindow : FluentWindow
         launcherInput.BorderBrush = base.BorderBrush;
         if (BtnStatus == 1)
         {
-            this.Close();
+            Process.GetCurrentProcess().Kill();
         }
         // 检测地址是否填写
         if (apiInput.Text.Equals(null) || apiInput.Text.Equals(""))
@@ -106,7 +106,7 @@ public partial class StartWindow : FluentWindow
 
                 Log.Info("配置完成");
                 resultMsg.Foreground = Brushes.Green;
-                resultMsg.Text = "配置完成";
+                resultMsg.Text = "配置完成，点击完成重新启动";
                 btnText.Text = "完成";
                 BtnStatus = 1;
             }

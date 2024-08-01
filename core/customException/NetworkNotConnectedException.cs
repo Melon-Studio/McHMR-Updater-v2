@@ -3,8 +3,6 @@
 namespace McHMR_Updater_v2.core.customException;
 public class NetworkNotConnectedException : Exception
 {
-    private readonly Boolean _isProcessKill;
-
     public NetworkNotConnectedException(string message)
         : base(message) { }
     public NetworkNotConnectedException(string message, Exception inner)
