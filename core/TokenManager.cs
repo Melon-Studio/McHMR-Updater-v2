@@ -64,7 +64,7 @@ public class TokenManager
         }
         catch (Exception ex)
         {
-            Log.Error("asyncGetToken 获取Token失败", ex);
+            Log.Error("asyncGetToken 获取Token失败: " + ex.Message, ex);
             throw new ApplicationException(ex.Message, ex);
         }
     }

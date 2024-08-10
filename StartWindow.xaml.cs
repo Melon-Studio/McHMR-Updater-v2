@@ -152,7 +152,7 @@ public partial class StartWindow : FluentWindow
         // 显示文件选择对话框
         OpenFileDialog openFileDialog = new OpenFileDialog();
         openFileDialog.Filter = "可执行文件|*.exe";
-        openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        openFileDialog.InitialDirectory = ConfigurationCheck.getCurrentDir();
         openFileDialog.Title = "选择exe可执行文件";
         openFileDialog.Multiselect = false;
         if (openFileDialog.ShowDialog() == true) // 确保用户选择了文件
