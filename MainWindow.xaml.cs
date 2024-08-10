@@ -25,18 +25,14 @@ public partial class MainWindow : FluentWindow
 
     private string token;
     private RestSharpClient client;
-    private readonly string gamePath = ConfigurationCheck.getCurrentDir() + "\\.minecraft";
+    private readonly string gamePath = ConfigurationCheck.getGameDir();
     private string inconsistentPath;
     private string version;
 
     public MainWindow()
     {
+        Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
         InitializeComponent();
-
-        Loaded += (sender, args) =>
-        {
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
-        };
     }
 
     private void InitializationCheck()

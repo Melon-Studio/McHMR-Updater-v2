@@ -12,6 +12,7 @@ public class ConfigurationCheck
         string configDirectory = currentDirectory + "\\mchmr";
         string tempDirectory = currentDirectory + "\\mchmr\\temp";
         string apiConfigFile = configDirectory + "\\config.json";
+        string gameDirectory = currentDirectory + "\\.minecraft";
 
         if (!Directory.Exists(configDirectory))
         {
@@ -26,6 +27,11 @@ public class ConfigurationCheck
         if (!File.Exists(apiConfigFile))
         {
             File.Create(apiConfigFile);
+        }
+
+        if (!File.Exists(gameDirectory))
+        {
+            Directory.CreateDirectory(gameDirectory);
         }
     }
 
@@ -51,6 +57,6 @@ public class ConfigurationCheck
 
     public static string getGameDir()
     {
-        return getConfigDir() + "\\.miencraft";
+        return getCurrentDir() + "\\.minecraft";
     }
 }

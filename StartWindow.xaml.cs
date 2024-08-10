@@ -26,12 +26,8 @@ public partial class StartWindow : FluentWindow
     public StartWindow()
     {
         this.Height = 150;
+        Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
         InitializeComponent();
-
-        Loaded += (sender, args) =>
-        {
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
-        };
     }
 
 
