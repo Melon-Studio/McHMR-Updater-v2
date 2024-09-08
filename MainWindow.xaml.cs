@@ -15,6 +15,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using Wpf.Ui.Controls;
 
 namespace McHMR_Updater_v2;
@@ -214,6 +215,17 @@ public partial class MainWindow : FluentWindow
                 return true;
             }
             tipText.Text = "检测到更新，正在获取差异文件";
+
+            //
+            
+            uiProgressRing.SetValue(Grid.ColumnProperty, 1);
+            uiProgressRing.SetValue(Grid.ColumnSpanProperty, 1);
+            tipText.SetValue(Grid.ColumnProperty, 1);
+            tipText.SetValue(Grid.ColumnSpanProperty, 1);
+
+            upDataText.Visibility = Visibility.Visible;
+            upDataText.Text = serverVersion.data.description;
+
             return false;
         }
         catch (Exception ex)
@@ -374,6 +386,14 @@ public partial class MainWindow : FluentWindow
         File.Delete(inconsistentPath);
         //更新配置文件版本号
         await updateVersion();
+
+        uiProgressRing.SetValue(Grid.ColumnProperty, 0);
+        uiProgressRing.SetValue(Grid.ColumnSpanProperty, 2);
+        tipText.SetValue(Grid.ColumnProperty, 0);
+        tipText.SetValue(Grid.ColumnSpanProperty, 2);
+
+        upDataText.Visibility = Visibility.Hidden;
+
         // 启动游戏
         tipText.Text = "安装完成，正在打开启动器";
         await startLauncher();
