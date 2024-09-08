@@ -249,7 +249,16 @@ public partial class MainWindow : FluentWindow
 
     private async Task startLauncher()
     {
-        Process.Start(ConfigurationCheck.getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
+        try
+        {
+            Process.Start(ConfigurationCheck.getCurrentDir() + ConfigureReadAndWriteUtil.GetConfigValue("launcher"));
+        }
+        catch
+        {
+            await exitUpdater("启动器配置异常，请联系服主");
+            return;
+        }
+
         await Task.Delay(3000);
         Process.GetCurrentProcess().Kill();
         return;
