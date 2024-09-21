@@ -15,7 +15,7 @@
             <RowDefinition Height="7*" />
             <RowDefinition Height="2*" />
         </Grid.RowDefinitions>
-
+        
         <ui:TitleBar 
             ShowMaximize="False"
             ShowMinimize="False"
@@ -68,12 +68,12 @@
                     VerticalAlignment="Top" 
                     Margin="0,2,0,0" 
                     Click="selectLauncherBtn_Click" >
-                    <ui:SymbolIcon Symbol="Folder16"/>
+                        <ui:SymbolIcon Symbol="Folder16"/>
                 </ui:Button>
             </StackPanel>
         </StackPanel>
-
-
+        
+        
 
         <ui:TextBlock
             Grid.Row="3"
@@ -96,6 +96,5 @@
                 <ui:ProgressRing x:Name="btnLoadding" IsIndeterminate="True" Width="18" Height="18" Visibility="Hidden" />
             </Grid>
         </ui:Button>
-        <ui:TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Grid.Row="2" TextWrapping="Wrap" Text="ps：如进入此页面请联系服主" FontSize="14" VerticalAlignment="Center"/>
     </Grid>
 </ui:FluentWindow>

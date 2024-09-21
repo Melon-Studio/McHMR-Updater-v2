@@ -7,15 +7,10 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ContentRendered="FluentWindow_ContentRendered">
-    <Grid x:Name="mainGrid">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="140" />
-            <RowDefinition Height="60" />
+            <RowDefinition />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -24,40 +19,14 @@
             ShowMaximize="False"
             ShowMinimize="False" />
 
-        <TextBlock 
-            Visibility="Hidden"
-            TextWrapping="Wrap"
-            Width="200"
-            Grid.Row="0"
-            x:Name="upDataText"
-            VerticalAlignment="Top" 
-            HorizontalAlignment="Left" 
-            FontSize="14" Height="100" Margin="85,185,0,0" Grid.RowSpan="2" RenderTransformOrigin="0.55,0.998" />
-
-        <!--
-            Grid.Row="0" 
-            Grid.Column="1"
-            Grid.ColumnSpan="1"
-        -->
         <ui:ProgressRing 
-            x:Name="uiProgressRing"
             Grid.Row="0" 
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
             VerticalAlignment="Bottom" 
             IsIndeterminate="True" 
             Foreground="#34495e"
             Margin="0,0,0,5" />
-
-        <!--
-            Grid.Row="1" 
-            Grid.Column="1"
-            Grid.ColumnSpan="1"
-        -->
         <ui:TextBlock 
             Grid.Row="1" 
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
             x:Name="tipText"
             Text="检测更新" 
             VerticalAlignment="Top" 
@@ -65,7 +34,7 @@
             Margin="0,5,0,0" 
             FontSize="14" />
 
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="6*" />
