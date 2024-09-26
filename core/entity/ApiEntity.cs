@@ -22,5 +22,13 @@
         {
             get; set;
         }
+        public string useBackground
+        {
+            get; set;
+        }
+        public string background
+        {
+            get; set;
+        }
     }
 }

@@ -35,7 +35,7 @@ public partial class StartWindow : FluentWindow
     private async void verifyBtn_Click(object sender, RoutedEventArgs e)
     {
         // 初始化
-        resultMsg.Text = "";
+        resultMsg.Text = "如果你看到了此窗口，请联系服主";
         apiInput.BorderBrush = base.BorderBrush;
         launcherInput.BorderBrush = base.BorderBrush;
         if (BtnStatus == 1)
@@ -97,6 +97,11 @@ public partial class StartWindow : FluentWindow
 
                 writer.Close();
                 fileStream.Close();
+
+                if(ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == string.Empty)
+                {
+                    ConfigureReadAndWriteUtil.SetConfigValue("useBackground", "true");
+                }
 
                 ConfigureReadAndWriteUtil.SetConfigValue("launcher", selectedFilePath);
 

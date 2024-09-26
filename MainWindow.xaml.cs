@@ -2,6 +2,7 @@
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
+using McHMR_Updater_v2.core.convert;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
 using Newtonsoft.Json;
@@ -9,12 +10,15 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Wpf.Ui.Controls;
 
 namespace McHMR_Updater_v2;
@@ -57,14 +61,51 @@ public partial class MainWindow : FluentWindow
 
     }
 
-    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
+    private async void FluentWindow_Loaded(object sender, RoutedEventArgs e)
     {
         // 初始化
-        progressBar.Visibility = Visibility.Collapsed;
-        progressBarSpeed.Visibility = Visibility.Collapsed;
+        progressMain.Visibility = Visibility.Hidden;
         tipText.Text = "正在获取最新版本";
+        await Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+        });
         InitializationCheck();
-        titleBar.Title = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
+        // 背景图片
+        if (ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == "true" || ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == null)
+        {
+            ImageBrush brush = null;
+            if (ConfigureReadAndWriteUtil.GetConfigValue("background") == null)
+            {
+                Bitmap bitmap = Properties.Resources.DefaultBackground;
+                using (MemoryStream memory = new MemoryStream())
+                {
+                    bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                    memory.Position = 0;
+                    BitmapImage bitmapImage = new BitmapImage();
+                    bitmapImage.BeginInit();
+                    bitmapImage.StreamSource = memory;
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.EndInit();
+                    brush = new ImageBrush(bitmapImage);
+                    brush.Stretch = Stretch.UniformToFill;
+                }
+            }
+            else
+            {
+                //TODO 网络图片
+            }
+            background.Background = brush;
+        }
+        else
+        {
+            title.Text = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
+        }
+
+    }
+
+    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
+    {
         // 网络检测
         if (!IsConnectionAvailable())
         {
@@ -100,7 +141,6 @@ public partial class MainWindow : FluentWindow
         List<string> noFileList = await noFile.CheckFiles(hashList.hashList, hashList.whiteList, gamePath);
         if (noFileList.Count > 0)
         {
-            tipText.Text = "正在删除服务端不存在的文件";
             foreach (string file in noFileList)
             {
                 File.Delete(file);
@@ -111,10 +151,11 @@ public partial class MainWindow : FluentWindow
         if (inconsistentFile.Count > 0)
         {
             await requestIncrementalPackage(inconsistentFile);
+            tipDescription.Text = "";
         }
         else
         {
-            tipText.Text = "暂未发现需要更新的文件，正在为您打开启动器";
+            tipText.Text = "更新完成，正在为您打开启动器";
             //更新配置文件版本号
             await updateVersion();
             await startLauncher();
@@ -136,8 +177,7 @@ public partial class MainWindow : FluentWindow
                                 return;
                             }
 
-                            progressBar.Visibility = Visibility.Collapsed;
-                            progressBarSpeed.Visibility = Visibility.Collapsed;
+                            progressMain.Visibility = Visibility.Hidden;
 
                             tipText.Text = "正在安装新版本，请稍后";
 
@@ -173,8 +213,7 @@ public partial class MainWindow : FluentWindow
     {
         progressBar.Dispatcher.Invoke(() =>
         {
-            progressBar.Visibility = Visibility.Visible;
-            progressBarSpeed.Visibility = Visibility.Visible;
+            progressMain.Visibility = Visibility.Visible;
         });
     }
     private async Task<Boolean> judgmentUpdate()
@@ -207,12 +246,21 @@ public partial class MainWindow : FluentWindow
         {
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
             version = serverVersion.data.latestVersion;
+            Console.WriteLine(serverVersion.data.latestVersion);
+            Console.WriteLine(serverVersion.data.description);
             if (new Version(localVersion) >= new Version(version))
             {
                 tipText.Text = "暂无更新，正在打开启动器";
                 await startLauncher();
                 return true;
             }
+            tipText.Text = "发现新版本: " + serverVersion.data.latestVersion;
+            tipDescription.Text = serverVersion.data.description;
+            await Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+            });
+
             tipText.Text = "检测到更新，正在获取差异文件";
             return false;
         }
