@@ -22,5 +22,17 @@
         {
             get; set;
         }
+        public int hasBackground
+        {
+            get; set;
+        }
+        public string backgroundUrl
+        {
+            get; set;
+        }
+        public string backgroundHash
+        {
+            get; set;
+        }
     }
 }

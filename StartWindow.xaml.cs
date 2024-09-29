@@ -26,12 +26,9 @@ public partial class StartWindow : FluentWindow
     public StartWindow()
     {
         this.Height = 150;
+        Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
         InitializeComponent();
-
-        Loaded += (sender, args) =>
-        {
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
-        };
+        resultMsg.Text = "如果你看到了此窗口，请联系服主";
     }
 
 
@@ -39,12 +36,11 @@ public partial class StartWindow : FluentWindow
     private async void verifyBtn_Click(object sender, RoutedEventArgs e)
     {
         // 初始化
-        resultMsg.Text = "";
         apiInput.BorderBrush = base.BorderBrush;
         launcherInput.BorderBrush = base.BorderBrush;
         if (BtnStatus == 1)
         {
-            this.Close();
+            Process.GetCurrentProcess().Kill();
         }
         // 检测地址是否填写
         if (apiInput.Text.Equals(null) || apiInput.Text.Equals(""))
@@ -81,36 +77,22 @@ public partial class StartWindow : FluentWindow
             var client = new RestSharpClient(apiInput.Text, null, false);
             var apiResponse = await client.GetAsync<ApiEntity>("");
 
-            if (getTaskContent(apiResponse, "data") == "null")
+            if (apiResponse.code == 0) 
             {
-                resultMsg.Text = getTaskContent(apiResponse, "msg").TrimStart('\"').TrimEnd('\"');
-                btnText.Visibility = Visibility.Visible;
-                btnLoadding.Visibility = Visibility.Hidden;
-                Log.Info(getTaskContent(apiResponse, "msg").TrimStart('\"').TrimEnd('\"'));
-                return;
-            }
-            else
-            {
-                btnText.Visibility = Visibility.Visible;
-                btnLoadding.Visibility = Visibility.Hidden;
-
                 // 保存至配置
                 FileStream fileStream = new FileStream(ConfigurationCheck.getConfigFile(), FileMode.Truncate);
                 StreamWriter writer = new StreamWriter(fileStream, Encoding.UTF8);
-                writer.Write(getTaskContent(apiResponse, "data"));
+                writer.Write(JsonConvert.SerializeObject(apiResponse.data));
 
                 writer.Close();
                 fileStream.Close();
 
-                ConfigureReadAndWriteUtil.SetConfigValue("launcher", selectedFilePath);
-
                 Log.Info("配置完成");
                 resultMsg.Foreground = Brushes.Green;
-                resultMsg.Text = "配置完成";
+                resultMsg.Text = "配置完成，点击完成重新启动";
                 btnText.Text = "完成";
                 BtnStatus = 1;
             }
-
         }
         catch (Exception ex)
         {
@@ -118,21 +100,6 @@ public partial class StartWindow : FluentWindow
             resultMsg.Text = ex.Message;
             btnText.Visibility = Visibility.Visible;
             btnLoadding.Visibility = Visibility.Hidden;
-        }
-    }
-
-    private string getTaskContent(RestApiResult<ApiEntity> restApiResult, string Attributes)
-    {
-        switch (Attributes)
-        {
-            case ("code"):
-                return JsonConvert.SerializeObject(restApiResult.code);
-            case ("msg"):
-                return JsonConvert.SerializeObject(restApiResult.msg);
-            case ("data"):
-                return JsonConvert.SerializeObject(restApiResult.data);
-            default:
-                return null;
         }
     }
 
@@ -156,7 +123,7 @@ public partial class StartWindow : FluentWindow
         // 显示文件选择对话框
         OpenFileDialog openFileDialog = new OpenFileDialog();
         openFileDialog.Filter = "可执行文件|*.exe";
-        openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        openFileDialog.InitialDirectory = ConfigurationCheck.getCurrentDir();
         openFileDialog.Title = "选择exe可执行文件";
         openFileDialog.Multiselect = false;
         if (openFileDialog.ShowDialog() == true) // 确保用户选择了文件
