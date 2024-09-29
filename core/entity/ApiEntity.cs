@@ -22,11 +22,15 @@
         {
             get; set;
         }
-        public string useBackground
+        public int hasBackground
         {
             get; set;
         }
-        public string background
+        public string backgroundUrl
+        {
+            get; set;
+        }
+        public string backgroundHash
         {
             get; set;
         }

@@ -17,6 +17,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Wpf.Ui.Controls;
@@ -32,6 +33,7 @@ public partial class MainWindow : FluentWindow
     private readonly string gamePath = ConfigurationCheck.getGameDir();
     private string inconsistentPath;
     private string version;
+    private string[] imageExtensions = { ".jpg", ".jpeg" };
 
     public MainWindow()
     {
@@ -58,24 +60,45 @@ public partial class MainWindow : FluentWindow
             Window startWindow = new StartWindow();
             startWindow.ShowDialog();
         }
-
     }
 
     private async void FluentWindow_Loaded(object sender, RoutedEventArgs e)
     {
         // 初始化
-        progressMain.Visibility = Visibility.Hidden;
-        tipText.Text = "正在获取最新版本";
-        await Task.Run(async () =>
-        {
-            await Task.Delay(1000);
-        });
         InitializationCheck();
+        // Token 更新
+        try
+        {
+            await new TokenManager().setToken();
+            
+            client = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"), ConfigureReadAndWriteUtil.GetConfigValue("token"));
+        }
+        catch (Exception ex) 
+        {
+            Log.Error(ex);
+        }
+        // 服务器名更新
+        var apiResp = await client.GetAsync<ApiEntity>("/server/GetServerAPI");
+        if (apiResp.code == 0)
+        {
+            ConfigureReadAndWriteUtil.SetConfigValue("serverName", apiResp.data.serverName, typeof(string));
+        }
         // 背景图片
-        if (ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == "true" || ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == null)
+        SetBackground();
+    }
+
+    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
+    {
+        progressMain.Visibility = Visibility.Hidden;
+
+        // 背景图片
+        var bgResp = await client.GetAsync<BackgroundEntity>("/launcher/GetLauncherBackground");
+        ConfigureReadAndWriteUtil.SetConfigValue("hasBackground", bgResp.data.hasBackground.ToString(), typeof(int));
+
+        if (ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == "1" || ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == null)
         {
             ImageBrush brush = null;
-            if (ConfigureReadAndWriteUtil.GetConfigValue("background") == null)
+            if (FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions) == null)
             {
                 Bitmap bitmap = Properties.Resources.DefaultBackground;
                 using (MemoryStream memory = new MemoryStream())
@@ -93,7 +116,26 @@ public partial class MainWindow : FluentWindow
             }
             else
             {
-                //TODO 网络图片
+                if (bgResp.code == 0)
+                {
+                    if (bgResp.data.backgroundHash == null && ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash") != null)
+                    {
+                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", null, typeof(string));
+                    }
+
+                    if (bgResp.data.backgroundHash != null && bgResp.data.backgroundHash != ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash"))
+                    {
+                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundUrl", bgResp.data.backgroundUrl, typeof(string));
+                        ClearFolder(ConfigurationCheck.getBackgroundDir());
+
+                        var downloader = client.GetDownloadService();
+                        await downloader.DownloadFileTaskAsync(bgResp.data.backgroundUrl, ConfigurationCheck.getBackgroundDir());
+                        SetBackground();
+
+                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", bgResp.data.backgroundHash, typeof(string));
+                    }
+                }
+
             }
             background.Background = brush;
         }
@@ -102,10 +144,12 @@ public partial class MainWindow : FluentWindow
             title.Text = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
         }
 
-    }
 
-    private async void FluentWindow_ContentRendered(object sender, EventArgs e)
-    {
+        await Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+        });
+        tipText.Text = "正在获取最新版本";
         // 网络检测
         if (!IsConnectionAvailable())
         {
@@ -130,6 +174,8 @@ public partial class MainWindow : FluentWindow
             Log.Error("无法连接至服务器: " + ex.Message);
             await exitUpdater("无法连接至服务器，请联系服主");
         }
+        
+        
         // 判断更新
         if (await judgmentUpdate()) return;
         // 请求最新版本哈希列表
@@ -162,6 +208,64 @@ public partial class MainWindow : FluentWindow
         }
         // 覆盖安装
         //await install(inconsistentFilePath);
+    }
+
+    private static void ClearFolder(string folderPath)
+    {
+        try
+        {
+            if (Directory.Exists(folderPath))
+            {
+                string[] files = Directory.GetFiles(folderPath);
+                string[] directories = Directory.GetDirectories(folderPath);
+
+                foreach (string file in files)
+                {
+                    File.Delete(file);
+                }
+
+                foreach (string directory in directories)
+                {
+                    ClearFolder(directory);
+                    Directory.Delete(directory);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+        }
+    }
+
+    private void SetBackground()
+    {
+        string firstImagePath = FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions);
+        if (!string.IsNullOrEmpty(firstImagePath))
+        {
+            BitmapImage bitmapImage = new BitmapImage(new Uri(firstImagePath));
+            background.Background = new ImageBrush(bitmapImage);
+        }
+    }
+
+    private string FindFirstImageInFolder(string folderPath, string[] extensions)
+    {
+        try
+        {
+            string[] files = Directory.GetFiles(folderPath);
+            for (int i = 0; i < files.Length; i++)
+            {
+                string extension = Path.GetExtension(files[i]).ToLower();
+                if (Array.Exists(extensions, ext => ext == extension))
+                {
+                    return files[i];
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+        }
+        return null;
     }
 
     private async void onDownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
@@ -220,25 +324,11 @@ public partial class MainWindow : FluentWindow
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
 
-        client = new RestSharpClient(baseUrl);
-        try
-        {
-            token = await new TokenManager(client).getToken();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex);
-            await exitUpdater(ex.Message);
-            return true;
-        }
-
-        client = new RestSharpClient(baseUrl, token);
-
         string localVersion = ConfigureReadAndWriteUtil.GetConfigValue("version");
 
         if (string.IsNullOrEmpty(localVersion))
         {
-            ConfigureReadAndWriteUtil.SetConfigValue("version", "0.0.0");
+            ConfigureReadAndWriteUtil.SetConfigValue("version", "0.0.0", typeof(string));
             localVersion = "0.0.0";
         }
 
@@ -431,7 +521,7 @@ public partial class MainWindow : FluentWindow
     {
         await Task.Run(() =>
         {
-            ConfigureReadAndWriteUtil.SetConfigValue("version", version);
+            ConfigureReadAndWriteUtil.SetConfigValue("version", version, typeof(string));
         });
     }
 }

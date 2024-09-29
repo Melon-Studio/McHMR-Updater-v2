@@ -13,17 +13,19 @@ public class TokenManager
     private readonly RestSharpClient _restClient;
     private TokenEntity tokenEntity;
 
-    public TokenManager(RestSharpClient client)
+    public TokenManager()
     {
-        _restClient = client;
+        _restClient = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
     }
 
-    public async Task<string> getToken()
+    public async Task setToken()
     {
+        // 判断当前是否存在 Token，如果不存在则获取，存在则验证
         string token = ConfigureReadAndWriteUtil.GetConfigValue("token");
 
         if (string.IsNullOrEmpty(token))
         {
+            // NULL
             string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
             if (string.IsNullOrEmpty(baseUrl))
             {
@@ -31,20 +33,18 @@ public class TokenManager
             }
             tokenEntity = await asyncGetToken();
 
-            ConfigureReadAndWriteUtil.SetConfigValue("token", tokenEntity.token);
-
-            return tokenEntity.token;
+            ConfigureReadAndWriteUtil.SetConfigValue("token", tokenEntity.token, typeof(string));
+            return;
         }
-        Boolean isAvailability = await asyncCheckAvailability(token);
-        if (!isAvailability)
+        // NO NULL
+        if (IsNowAfterTimestamp(long.Parse(ConfigureReadAndWriteUtil.GetConfigValue("timeout"))))
         {
             tokenEntity = await asyncGetToken();
 
-            ConfigureReadAndWriteUtil.SetConfigValue("token", tokenEntity.token);
+            ConfigureReadAndWriteUtil.SetConfigValue("token", tokenEntity.token, typeof(string));
 
-            return tokenEntity.token;
+            return;
         }
-        return token;
     }
 
     private async Task<TokenEntity> asyncGetToken()
@@ -54,9 +54,10 @@ public class TokenManager
             TokenEntity entity = new TokenEntity();
 
             var res = await _restClient.GetAsync<TokenEntity>("/GetToken");
+            setTimeout();
             if (!string.IsNullOrEmpty(res.data.token))
             {
-                ConfigureReadAndWriteUtil.SetConfigValue("token", res.data.token);
+                ConfigureReadAndWriteUtil.SetConfigValue("token", res.data.token, typeof(string));
                 entity.token = res.data.token;
                 return entity;
             }
@@ -69,24 +70,19 @@ public class TokenManager
         }
     }
 
-    private async Task<Boolean> asyncCheckAvailability(string token)
+    // 设置超时时间
+    private void setTimeout()
     {
-        try
-        {
-            TokenEntity entity = new TokenEntity();
+        DateTime currentTime = DateTime.Now;
+        DateTime tenMinutesLater = currentTime.AddMinutes(10);
+        TimeSpan timeDiff = tenMinutesLater - new DateTime(1970, 1, 1);
+        ConfigureReadAndWriteUtil.SetConfigValue("timeout", timeDiff.TotalSeconds.ToString(), typeof(string));
+    }
 
-            var res = await _restClient.GetAsync<VersionEntity>("/update/GetLatestVersion", token);
-            if (!string.IsNullOrEmpty(res.data.latestVersion))
-            {
-                return true;
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-
-            Log.Info("asyncCheckAvailability 获取Token失败，重新获取 Token", ex);
-            return false;
-        }
+    private bool IsNowAfterTimestamp(long timestamp)
+    {
+        DateTime currentTime = DateTime.Now;
+        DateTime targetTime = new DateTime(1970, 1, 1).AddSeconds(timestamp);
+        return currentTime > targetTime;
     }
 }
