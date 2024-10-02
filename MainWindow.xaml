@@ -6,87 +6,100 @@
         xmlns:local="clr-namespace:McHMR_Updater_v2"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ContentRendered="FluentWindow_ContentRendered">
-    <Grid x:Name="mainGrid">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
+        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ContentRendered="FluentWindow_ContentRendered" Loaded="FluentWindow_Loaded">
+
+    <Grid x:Name="background">
+        <Grid.Background>
+            <ImageBrush/>
+        </Grid.Background>
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="140" />
-            <RowDefinition Height="60" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar
-            x:Name="titleBar"
-            ShowClose="False"
-            ShowMaximize="False"
-            ShowMinimize="False" />
-
-        <TextBlock 
-            Visibility="Hidden"
-            TextWrapping="Wrap"
-            Width="200"
-            Grid.Row="0"
-            x:Name="upDataText"
-            VerticalAlignment="Top" 
-            HorizontalAlignment="Left" 
-            FontSize="14" Height="100" Margin="85,185,0,0" Grid.RowSpan="2" RenderTransformOrigin="0.55,0.998" />
-
-        <!--
-            Grid.Row="0" 
-            Grid.Column="1"
-            Grid.ColumnSpan="1"
-        -->
-        <ui:ProgressRing 
-            x:Name="uiProgressRing"
-            Grid.Row="0" 
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
-            VerticalAlignment="Bottom" 
-            IsIndeterminate="True" 
-            Foreground="#34495e"
-            Margin="0,0,0,5" />
-
-        <!--
-            Grid.Row="1" 
-            Grid.Column="1"
-            Grid.ColumnSpan="1"
-        -->
-        <ui:TextBlock 
-            Grid.Row="1" 
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
-            x:Name="tipText"
-            Text="检测更新" 
-            VerticalAlignment="Top" 
-            HorizontalAlignment="Center" 
-            Margin="0,5,0,0" 
-            FontSize="14" />
-
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="6*" />
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="7*" />
+                <ColumnDefinition Width="3*" />
             </Grid.ColumnDefinitions>
-            <ProgressBar 
-                Grid.Column="1" 
-                x:Name="progressBar"
-                Value="80" 
-                Foreground="#34495e"
-                Height="10" 
-                VerticalAlignment="Bottom" 
-                Margin="0,0,0,20" Visibility="Hidden" />
-            <ui:TextBlock 
-                Grid.Column="2" 
-                Text="10Mb/s" 
-                x:Name="progressBarSpeed"
-                VerticalAlignment="Bottom" 
-                HorizontalAlignment="Left" 
-                Margin="20,0,0,18" 
-                FontSize="12" Visibility="Hidden" />
+
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="8*" />
+                    <RowDefinition Height="2*" />
+                </Grid.RowDefinitions>
+
+                <ui:TextBlock
+                    Grid.Row="0"
+                    Text=""
+                    x:Name="title"
+                    Margin="10, 10, 0, 0"/>
+                
+                <Grid 
+                    x:Name="progressMain" 
+                    Visibility="Hidden" 
+                    Grid.ColumnSpan="2" 
+                    Margin="0,347,0,0" 
+                    Grid.RowSpan="2">
+                    <Grid.Background>
+                        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                            <GradientStop Color="#7F000000" Offset="1"/>
+                            <GradientStop Color="#00000000" Offset="0"/>
+                        </LinearGradientBrush>
+                    </Grid.Background>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="7*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar 
+                        Grid.Column="1" 
+                        x:Name="progressBar"
+                        Value="80" 
+                        Foreground="#34495e"
+                        Height="10" 
+                        VerticalAlignment="Bottom" 
+                        Margin="0,0,0,20" Visibility="Visible" />
+                    <TextBlock 
+                        Grid.Column="2" 
+                        Text="10Mb/s" 
+                        x:Name="progressBarSpeed"
+                        Margin="0,0,0,20" 
+                        FontSize="12" Visibility="Visible" VerticalAlignment="Bottom" HorizontalAlignment="Center" Foreground="White" />
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Column="1" Background="#7F000000">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="190" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ui:ProgressRing 
+                    Grid.Row="0"
+                    VerticalAlignment="Bottom" 
+                    IsIndeterminate="True" 
+                    Foreground="#34495e"
+                    Margin="0,0,0,5" />
+
+                <TextBlock 
+                    Grid.Row="1"
+                    x:Name="tipText"
+                    Text="检测更新" 
+                    VerticalAlignment="Top" 
+                    HorizontalAlignment="Center" 
+                    Margin="0,5,0,0" 
+                    FontSize="14" Foreground="White" />
+
+                <TextBlock 
+                    Grid.Row="2"
+                    x:Name="tipDescription"
+                    VerticalAlignment="Top" 
+                    HorizontalAlignment="Left" 
+                    Margin="10,15,10,5" 
+                    FontSize="14" 
+                    Foreground="White" TextWrapping="Wrap" />
+            </Grid>
         </Grid>
     </Grid>
 </ui:FluentWindow>

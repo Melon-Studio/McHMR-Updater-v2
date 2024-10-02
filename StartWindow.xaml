@@ -92,10 +92,12 @@
             Width="60"
             HorizontalAlignment="Right" Click="verifyBtn_Click">
             <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
                 <TextBlock x:Name="btnText" Text="验证" />
-                <ui:ProgressRing x:Name="btnLoadding" IsIndeterminate="True" Width="18" Height="18" Visibility="Hidden" />
+                <ui:ProgressRing x:Name="btnLoadding" IsIndeterminate="True" Width="18" Height="18" Visibility="Hidden" Margin="5,0,5,0" />
             </Grid>
         </ui:Button>
-        <ui:TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Grid.Row="2" TextWrapping="Wrap" Text="ps：如进入此页面请联系服主" FontSize="14" VerticalAlignment="Center"/>
     </Grid>
 </ui:FluentWindow>

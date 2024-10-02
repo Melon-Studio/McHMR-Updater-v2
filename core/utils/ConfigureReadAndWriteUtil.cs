@@ -1,8 +1,10 @@
 ﻿using log4net;
 using McHMR_Updater_v2.core.entity;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace McHMR_Updater_v2.core.utils;
 public class ConfigureReadAndWriteUtil
@@ -70,6 +72,7 @@ public class ConfigureReadAndWriteUtil
         }
     }
 
+    [Obsolete("该方法已经过时，将在未来版本移除，请在第三个参数传入属性值的参数类型")]
     public static void SetConfigValue(string configKey, string value)
     {
         string configPath = ConfigurationCheck.getConfigFile();
@@ -112,5 +115,109 @@ public class ConfigureReadAndWriteUtil
             Log.Error("配置文件未找到。", ex);
             throw new InvalidOperationException("读取配置时发生错误。", ex);
         }
+    }
+
+
+    public static void SetConfigValue(string configKey, string value, Type valueType)
+    {
+        string configPath = ConfigurationCheck.getConfigFile();
+
+        if (!File.Exists(configPath))
+        {
+            Console.Error.WriteLine("配置文件未找到。");
+            throw new FileNotFoundException("配置文件未找到。", configPath);
+        }
+
+        try
+        {
+            string configContent = File.ReadAllText(configPath);
+            object configObject = JsonConvert.DeserializeObject(configContent);
+
+            if (configObject == null)
+            {
+                Console.Error.WriteLine("反序列化 JSON 失败，结果为空。");
+                throw new InvalidOperationException("反序列化 JSON 失败，结果为空。");
+            }
+
+            bool keyExists = false;
+            if (configObject is Newtonsoft.Json.Linq.JObject jObject)
+            {
+                if (jObject.ContainsKey(configKey))
+                {
+                    keyExists = true;
+                }
+                else
+                {
+                    object instance = CreateInstance(valueType);
+                    jObject.Add(configKey, instance is JToken jToken ? jToken : new JValue(instance));
+                }
+            }
+
+            object convertedValue = null;
+            if (valueType == typeof(int))
+            {
+                convertedValue = int.Parse(value);
+            }
+            else if (valueType == typeof(double))
+            {
+                convertedValue = double.Parse(value);
+            }
+            else if (valueType == typeof(bool))
+            {
+                convertedValue = bool.Parse(value);
+            }
+            else if (valueType == typeof(string))
+            {
+                convertedValue = value;
+            }
+            else if (valueType == typeof(long))
+            {
+                convertedValue = long.Parse(value);
+            }
+
+            if (!keyExists)
+            {
+                if (configObject is Newtonsoft.Json.Linq.JObject updatedJObject)
+                {
+                    updatedJObject[configKey] = convertedValue is JToken jToken ? jToken : new JValue(convertedValue);
+                }
+            }
+            else
+            {
+                if (configObject is Newtonsoft.Json.Linq.JObject existingJObject)
+                {
+                    existingJObject[configKey] = convertedValue is JToken jToken ? jToken : new JValue(convertedValue);
+                }
+            }
+
+            string updatedConfigContent = JsonConvert.SerializeObject(configObject, Formatting.Indented);
+            File.WriteAllText(configPath, updatedConfigContent);
+        }
+        catch (JsonException jsonEx)
+        {
+            Console.Error.WriteLine("JSON 格式不正确。", jsonEx);
+            throw new InvalidOperationException("JSON 格式不正确。", jsonEx);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("配置文件未找到。", ex);
+            throw new InvalidOperationException("读取配置时发生错误。", ex);
+        }
+    }
+
+    private static object CreateInstance(Type valueType)
+    {
+        if (valueType == typeof(int))
+            return 0;
+        else if (valueType == typeof(double))
+            return 0.0;
+        else if (valueType == typeof(bool))
+            return false;
+        else if (valueType == typeof(string))
+            return "";
+        else if (valueType == typeof(long))
+            return 0L;
+        else
+            throw new NotImplementedException($"不支持的类型：{valueType.Name}");
     }
 }
