@@ -6,6 +6,7 @@ using McHMR_Updater_v2.core.convert;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,8 +14,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +37,8 @@ public partial class MainWindow : FluentWindow
     private string inconsistentPath;
     private string version;
     private string[] imageExtensions = { ".jpg", ".jpeg" };
+    private RestApiResult<BackgroundEntity> _bgResp;
+    private RestSharpClient noTokenClient;
 
     public MainWindow()
     {
@@ -72,78 +77,26 @@ public partial class MainWindow : FluentWindow
             await new TokenManager().setToken();
             
             client = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"), ConfigureReadAndWriteUtil.GetConfigValue("token"));
+            noTokenClient = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
+            
         }
         catch (Exception ex) 
         {
             Log.Error(ex);
         }
         // 服务器名更新
-        var apiResp = await client.GetAsync<ApiEntity>("/server/GetServerAPI");
+        var apiResp = await noTokenClient.GetAsync<ApiEntity>("/server/GetServerAPI");
         if (apiResp.code == 0)
         {
             ConfigureReadAndWriteUtil.SetConfigValue("serverName", apiResp.data.serverName, typeof(string));
         }
         // 背景图片
-        SetBackground();
+        SetBackgroundAsync();
     }
 
     private async void FluentWindow_ContentRendered(object sender, EventArgs e)
     {
         progressMain.Visibility = Visibility.Hidden;
-
-        // 背景图片
-        var bgResp = await client.GetAsync<BackgroundEntity>("/launcher/GetLauncherBackground");
-        ConfigureReadAndWriteUtil.SetConfigValue("hasBackground", bgResp.data.hasBackground.ToString(), typeof(int));
-
-        if (ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == "1" || ConfigureReadAndWriteUtil.GetConfigValue("useBackground") == null)
-        {
-            ImageBrush brush = null;
-            if (FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions) == null)
-            {
-                Bitmap bitmap = Properties.Resources.DefaultBackground;
-                using (MemoryStream memory = new MemoryStream())
-                {
-                    bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                    memory.Position = 0;
-                    BitmapImage bitmapImage = new BitmapImage();
-                    bitmapImage.BeginInit();
-                    bitmapImage.StreamSource = memory;
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.EndInit();
-                    brush = new ImageBrush(bitmapImage);
-                    brush.Stretch = Stretch.UniformToFill;
-                }
-            }
-            else
-            {
-                if (bgResp.code == 0)
-                {
-                    if (bgResp.data.backgroundHash == null && ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash") != null)
-                    {
-                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", null, typeof(string));
-                    }
-
-                    if (bgResp.data.backgroundHash != null && bgResp.data.backgroundHash != ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash"))
-                    {
-                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundUrl", bgResp.data.backgroundUrl, typeof(string));
-                        ClearFolder(ConfigurationCheck.getBackgroundDir());
-
-                        var downloader = client.GetDownloadService();
-                        await downloader.DownloadFileTaskAsync(bgResp.data.backgroundUrl, ConfigurationCheck.getBackgroundDir());
-                        SetBackground();
-
-                        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", bgResp.data.backgroundHash, typeof(string));
-                    }
-                }
-
-            }
-            background.Background = brush;
-        }
-        else
-        {
-            title.Text = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
-        }
-
 
         await Task.Run(async () =>
         {
@@ -206,8 +159,6 @@ public partial class MainWindow : FluentWindow
             await updateVersion();
             await startLauncher();
         }
-        // 覆盖安装
-        //await install(inconsistentFilePath);
     }
 
     private static void ClearFolder(string folderPath)
@@ -237,13 +188,66 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private void SetBackground()
+    private async Task SetBackgroundAsync()
     {
-        string firstImagePath = FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions);
-        if (!string.IsNullOrEmpty(firstImagePath))
+        _bgResp = await client.GetAsync<BackgroundEntity>("/launcher/GetLauncherBackground");
+        ConfigureReadAndWriteUtil.SetConfigValue("hasBackground", _bgResp.data.hasBackground.ToString(), typeof(int));
+
+        if (ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == "1" || ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == null)
         {
-            BitmapImage bitmapImage = new BitmapImage(new Uri(firstImagePath));
-            background.Background = new ImageBrush(bitmapImage);
+            ImageBrush brush = null;
+            if (_bgResp.code == 0)
+            {
+                if (_bgResp.data.backgroundHash == null && ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash") != null)
+                {
+                    ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", null, typeof(string));
+                }
+
+                if (_bgResp.data.backgroundHash != null && _bgResp.data.backgroundHash != ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash"))
+                {
+                    string temeurl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
+                    string url = temeurl.Replace("/v1", "");
+                    ConfigureReadAndWriteUtil.SetConfigValue("backgroundUrl", _bgResp.data.backgroundUrl, typeof(string));
+                    ClearFolder(ConfigurationCheck.getBackgroundDir());
+                    //var downloader = noTokenClient.GetDownloadService();
+                    //downloader.DownloadFileCompleted += onDownloadBackgroundFileCompleted;
+                    string phat = ConfigurationCheck.getBackgroundDir() + "\\" + _bgResp.data.backgroundUrl.Replace("/images/background/", "");
+                    //await downloader.DownloadFileTaskAsync(url + _bgResp.data.backgroundUrl, phat);
+
+                    WebClient downloader = new WebClient();
+                    downloader.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0");
+                    downloader.DownloadFile(url + _bgResp.data.backgroundUrl, phat);
+                    ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
+
+                }
+            }
+            if (FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions) == null)
+            {
+                Bitmap bitmap = Properties.Resources.DefaultBackground;
+                using (MemoryStream memory = new MemoryStream())
+                {
+                    bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                    memory.Position = 0;
+                    BitmapImage bitmapImage = new BitmapImage();
+                    bitmapImage.BeginInit();
+                    bitmapImage.StreamSource = memory;
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.EndInit();
+                    brush = new ImageBrush(bitmapImage);
+                    brush.Stretch = Stretch.UniformToFill;
+                }
+            }
+            background.Background = brush;
+            string firstImagePath = FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions);
+            if (!string.IsNullOrEmpty(firstImagePath))
+            {
+                BitmapImage bitmapImage = new BitmapImage(new Uri(firstImagePath));
+                background.Background = new ImageBrush(bitmapImage);
+            }
+        }
+        else
+        {
+            title.Text = ConfigureReadAndWriteUtil.GetConfigValue("serverName");
         }
     }
 
@@ -290,7 +294,7 @@ public partial class MainWindow : FluentWindow
             await Dispatcher.BeginInvoke(method);
         });
     }
-    private void onDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+    private void onDownloadProgressChanged(object sender, Downloader.DownloadProgressChangedEventArgs e)
     {
         progressBar.Dispatcher.Invoke(() =>
         {
@@ -320,6 +324,15 @@ public partial class MainWindow : FluentWindow
             progressMain.Visibility = Visibility.Visible;
         });
     }
+
+    private async void onDownloadBackgroundFileCompleted(object sender, AsyncCompletedEventArgs e)
+    {
+        await progressBar.Dispatcher.Invoke(async () =>
+        {
+            ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
+        });
+    }
+
     private async Task<Boolean> judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
