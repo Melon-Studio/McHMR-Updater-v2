@@ -35,9 +35,9 @@ public class ConfigurationCheck
             Directory.CreateDirectory(gameDirectory);
         }
 
-        if (!File.Exists(backgroundDirectory))
+        if (!Directory.Exists(backgroundDirectory))
         {
-            File.Create(backgroundDirectory);
+            Directory.CreateDirectory(backgroundDirectory);
         }
     }
 

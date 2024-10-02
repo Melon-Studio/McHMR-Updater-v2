@@ -26,6 +26,10 @@
         {
             get; set;
         }
+        public string useBackground
+        {
+            get; set;
+        }
         public string backgroundUrl
         {
             get; set;
@@ -34,5 +38,10 @@
         {
             get; set;
         }
+        public string timeout
+        {
+            get; set;
+        }
+        
     }
 }
