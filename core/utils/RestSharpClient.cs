@@ -204,7 +204,6 @@ public class RestSharpClient
         {
             collection.Add("Authorization", "Bearer " + _token);
         }
-        collection.Add("Content-Type", "image/jpeg");
         //collection.Add("Conetent-Type", "application/octet-stream;charset=utf-8");
 
         RequestConfiguration requestConfig = new RequestConfiguration

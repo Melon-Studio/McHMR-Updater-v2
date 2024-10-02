@@ -50,6 +50,7 @@ public partial class MainWindow : FluentWindow
     {
         // 检查McHMR配置文件
         ConfigurationCheck.check();
+
         // 检查API配置
         try
         {
