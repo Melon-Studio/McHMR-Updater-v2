@@ -37,7 +37,8 @@ public class TokenManager
             return;
         }
         // NO NULL
-        if (IsNowAfterTimestamp((long)double.Parse(ConfigureReadAndWriteUtil.GetConfigValue("timeout"))))
+        string timeout = ConfigureReadAndWriteUtil.GetConfigValue("timeout");
+        if (string.IsNullOrEmpty(timeout) || IsNowAfterTimestamp((long)double.Parse(timeout)))
         {
             tokenEntity = await asyncGetToken();
 

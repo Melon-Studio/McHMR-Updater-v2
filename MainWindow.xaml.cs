@@ -71,6 +71,7 @@ public partial class MainWindow : FluentWindow
     {
         // 初始化
         InitializationCheck();
+     
         // Token 更新
         try
         {
@@ -91,7 +92,7 @@ public partial class MainWindow : FluentWindow
             ConfigureReadAndWriteUtil.SetConfigValue("serverName", apiResp.data.serverName, typeof(string));
         }
         // 背景图片
-        SetBackgroundAsync();
+        await SetBackgroundAsync();
     }
 
     private async void FluentWindow_ContentRendered(object sender, EventArgs e)
@@ -325,13 +326,13 @@ public partial class MainWindow : FluentWindow
         });
     }
 
-    private async void onDownloadBackgroundFileCompleted(object sender, AsyncCompletedEventArgs e)
-    {
-        await progressBar.Dispatcher.Invoke(async () =>
-        {
-            ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
-        });
-    }
+    //private async void onDownloadBackgroundFileCompleted(object sender, AsyncCompletedEventArgs e)
+    //{
+    //    await progressBar.Dispatcher.Invoke(async () =>
+    //    {
+    //        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
+    //    });
+    //}
 
     private async Task<Boolean> judgmentUpdate()
     {
@@ -347,6 +348,7 @@ public partial class MainWindow : FluentWindow
 
         try
         {
+            //client = new RestSharpClient(baseUrl, ConfigureReadAndWriteUtil.GetConfigValue("token"));
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
             version = serverVersion.data.latestVersion;
             Console.WriteLine(serverVersion.data.latestVersion);

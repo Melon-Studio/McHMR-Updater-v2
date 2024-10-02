@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
@@ -40,7 +41,10 @@ public partial class StartWindow : FluentWindow
         launcherInput.BorderBrush = base.BorderBrush;
         if (BtnStatus == 1)
         {
+            Process.Start(ConfigurationCheck.getCurrentDir() + "\\McHMR-Updater v2.exe");
+            await Task.Delay(1000);
             Process.GetCurrentProcess().Kill();
+
         }
         // 检测地址是否填写
         if (apiInput.Text.Equals(null) || apiInput.Text.Equals(""))
@@ -87,9 +91,13 @@ public partial class StartWindow : FluentWindow
                 writer.Close();
                 fileStream.Close();
 
+                ConfigureReadAndWriteUtil.SetConfigValue("launcher", launcherInput.Text,typeof(string));
+
                 Log.Info("配置完成");
                 resultMsg.Foreground = Brushes.Green;
                 resultMsg.Text = "配置完成，点击完成重新启动";
+                btnText.Visibility = Visibility.Visible;
+                btnLoadding.Visibility = Visibility.Hidden;
                 btnText.Text = "完成";
                 BtnStatus = 1;
             }

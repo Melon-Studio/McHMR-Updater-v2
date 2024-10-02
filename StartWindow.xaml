@@ -95,7 +95,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="btnText" Text="验证" />
+                <TextBlock x:Name="btnText" Text="验证" Height="19" VerticalAlignment="Top" />
                 <ui:ProgressRing x:Name="btnLoadding" IsIndeterminate="True" Width="18" Height="18" Visibility="Hidden" Margin="5,0,5,0" />
             </Grid>
         </ui:Button>
