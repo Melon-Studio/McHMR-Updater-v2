@@ -13,11 +13,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Packaging;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Policy;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,6 +41,7 @@ public partial class MainWindow : FluentWindow
     private string[] imageExtensions = { ".jpg", ".jpeg" };
     private RestApiResult<BackgroundEntity> _bgResp;
     private RestSharpClient noTokenClient;
+    private int isGetToken = 0;
 
     public MainWindow()
     {
@@ -72,7 +75,11 @@ public partial class MainWindow : FluentWindow
     {
         // 初始化
         InitializationCheck();
-     
+        //设置默认背景
+        if (ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == "1")
+        {
+            setDefaultBackground();
+        }
         // Token 更新
         try
         {
@@ -80,11 +87,12 @@ public partial class MainWindow : FluentWindow
             
             client = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"), ConfigureReadAndWriteUtil.GetConfigValue("token"));
             noTokenClient = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
+            isGetToken = 1;
             
         }
         catch (Exception ex) 
         {
-            Log.Error(ex);
+            await exitUpdater("Token 已失效，请十分钟后再试");
         }
         // 服务器名更新
         var apiResp = await noTokenClient.GetAsync<ApiEntity>("/server/GetServerAPI");
@@ -98,6 +106,11 @@ public partial class MainWindow : FluentWindow
 
     private async void FluentWindow_ContentRendered(object sender, EventArgs e)
     {
+        await Task.Run(() =>
+        {
+            while (isGetToken == 0) { }
+        });
+        
         progressMain.Visibility = Visibility.Hidden;
 
         await Task.Run(async () =>
@@ -197,7 +210,6 @@ public partial class MainWindow : FluentWindow
 
         if (ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == "1" || ConfigureReadAndWriteUtil.GetConfigValue("hasBackground") == null)
         {
-            ImageBrush brush = null;
             if (_bgResp.code == 0)
             {
                 if (_bgResp.data.backgroundHash == null && ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash") != null)
@@ -207,40 +219,20 @@ public partial class MainWindow : FluentWindow
 
                 if (_bgResp.data.backgroundHash != null && _bgResp.data.backgroundHash != ConfigureReadAndWriteUtil.GetConfigValue("backgroundHash"))
                 {
-                    string temeurl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
-                    string url = temeurl.Replace("/v1", "");
                     ConfigureReadAndWriteUtil.SetConfigValue("backgroundUrl", _bgResp.data.backgroundUrl, typeof(string));
                     ClearFolder(ConfigurationCheck.getBackgroundDir());
-                    //var downloader = noTokenClient.GetDownloadService();
-                    //downloader.DownloadFileCompleted += onDownloadBackgroundFileCompleted;
+                    DownloadService downloader = client.GetDownloadService();
                     string phat = ConfigurationCheck.getBackgroundDir() + "\\" + _bgResp.data.backgroundUrl.Replace("/images/background/", "");
-                    //await downloader.DownloadFileTaskAsync(url + _bgResp.data.backgroundUrl, phat);
-
-                    WebClient downloader = new WebClient();
-                    downloader.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0");
-                    downloader.DownloadFile(url + _bgResp.data.backgroundUrl, phat);
+                    await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileIdentification=" + _bgResp.data.backgroundHash + "&&type=2", phat);
                     ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
+                }
+            }
 
-                }
-            }
-            if (FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions) == null)
-            {
-                Bitmap bitmap = Properties.Resources.DefaultBackground;
-                using (MemoryStream memory = new MemoryStream())
-                {
-                    bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                    memory.Position = 0;
-                    BitmapImage bitmapImage = new BitmapImage();
-                    bitmapImage.BeginInit();
-                    bitmapImage.StreamSource = memory;
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.EndInit();
-                    brush = new ImageBrush(bitmapImage);
-                    brush.Stretch = Stretch.UniformToFill;
-                }
-            }
-            background.Background = brush;
             string firstImagePath = FindFirstImageInFolder(ConfigurationCheck.getBackgroundDir(), imageExtensions);
+            if (string.IsNullOrEmpty(firstImagePath))
+            {
+                setDefaultBackground();
+            }
             if (!string.IsNullOrEmpty(firstImagePath))
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(firstImagePath));
@@ -327,14 +319,6 @@ public partial class MainWindow : FluentWindow
         });
     }
 
-    //private async void onDownloadBackgroundFileCompleted(object sender, AsyncCompletedEventArgs e)
-    //{
-    //    await progressBar.Dispatcher.Invoke(async () =>
-    //    {
-    //        ConfigureReadAndWriteUtil.SetConfigValue("backgroundHash", _bgResp.data.backgroundHash, typeof(string));
-    //    });
-    //}
-
     private async Task<Boolean> judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
@@ -349,7 +333,6 @@ public partial class MainWindow : FluentWindow
 
         try
         {
-            //client = new RestSharpClient(baseUrl, ConfigureReadAndWriteUtil.GetConfigValue("token"));
             var serverVersion = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
             version = serverVersion.data.latestVersion;
             Console.WriteLine(serverVersion.data.latestVersion);
@@ -483,27 +466,19 @@ public partial class MainWindow : FluentWindow
         tipText.Text = "正在等待服务器响应";
         var jsonBodyObject = new { fileList = inconsistentFile };
         string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
-
-        var packageHash = await client.PostAsync<PackageEntity>("/update/GenerateIncrementalPackage", jsonBody);
-
+        RestApiResult<int> mode = await client.GetAsync<int>("/launcher/GetDownloadMode");
+        DownloadService downloader = client.GetDownloadService();
         try
         {
-            var downloader = client.GetDownloadService();
-
-            inconsistentPath = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash + ".zip";
-
-            if (!File.Exists(inconsistentPath))
+            if (mode.data == 0) {
+                await multipleFileDownload(downloader, jsonBody);
+            }else if (mode.data == 1)
             {
-                File.Create(inconsistentPath).Dispose();
+                await incrementalPackageDownload(downloader, jsonBody);
+            }else
+            {
+                await exitUpdater("服务器配置异常，请联系服主");
             }
-
-            downloader.DownloadStarted += OnDownloadStarted;
-            downloader.DownloadProgressChanged += onDownloadProgressChanged;
-            downloader.DownloadFileCompleted += onDownloadFileCompleted;
-
-            tipText.Text = "正在下载最新版本";
-
-            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileHash=" + packageHash.data.packageHash, inconsistentPath);
         }
         catch (Exception ex)
         {
@@ -539,5 +514,70 @@ public partial class MainWindow : FluentWindow
         {
             ConfigureReadAndWriteUtil.SetConfigValue("version", version, typeof(string));
         });
+    }
+
+    private async Task incrementalPackageDownload(DownloadService downloader, string jsonBody)
+    {
+        RestApiResult<PackageEntity> packageHash = await client.PostAsync<PackageEntity>("/update/GenerateIncrementalPackage", jsonBody);
+        inconsistentPath = ConfigurationCheck.getTempDir() + "\\" + packageHash.data.packageHash + ".zip";
+
+        if (!File.Exists(inconsistentPath))
+        {
+            File.Create(inconsistentPath).Dispose();
+        }
+
+        downloader.DownloadStarted += OnDownloadStarted;
+        downloader.DownloadProgressChanged += onDownloadProgressChanged;
+        downloader.DownloadFileCompleted += onDownloadFileCompleted;
+
+        tipText.Text = "正在下载最新版本";
+
+        await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileIdentification=" + packageHash.data.packageHash + "&&type=1", inconsistentPath);
+    }
+
+    private async Task multipleFileDownload(DownloadService downloader, string jsonBody)
+    {
+        RestApiResult<UpdateFileListEntity> file = await client.PostAsync<UpdateFileListEntity>("/update/GetUpdateFileList", jsonBody);
+        tipText.Text = "正在下载最新版本";
+
+        downloader.DownloadStarted += OnDownloadStarted;
+        downloader.DownloadProgressChanged += onDownloadProgressChanged;
+
+        foreach (UpdateFileEntity item in file.data.fileList)
+        {
+            string filePath = ConfigurationCheck.getGameDir() + item.file;
+            string parentDirectory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(parentDirectory))
+            {
+                Directory.CreateDirectory(parentDirectory);
+            }
+            if (!File.Exists(filePath))
+            {
+                File.Create(filePath).Dispose();
+            }
+            await downloader.DownloadFileTaskAsync(client.baseUrl + "/update/download" + "?fileIdentification=" + item.uuid + "&&type=3", filePath);
+        }
+        await updateVersion();
+        // 启动游戏
+        tipText.Text = "安装完成，正在打开启动器";
+        await startLauncher();
+    }
+    private void setDefaultBackground()
+    {
+            ImageBrush brush = null;
+            Bitmap bitmap = Properties.Resources.DefaultBackground;
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+                brush = new ImageBrush(bitmapImage);
+                brush.Stretch = Stretch.UniformToFill;
+                background.Background = brush;
+            }
     }
 }

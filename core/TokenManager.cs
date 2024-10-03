@@ -1,6 +1,7 @@
 ﻿using log4net;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
@@ -50,10 +51,9 @@ public class TokenManager
 
     private async Task<TokenEntity> asyncGetToken()
     {
+        TokenEntity entity = new TokenEntity();
         try
         {
-            TokenEntity entity = new TokenEntity();
-
             var res = await _restClient.GetAsync<TokenEntity>("/GetToken");
             setTimeout();
             if (!string.IsNullOrEmpty(res.data.token))
@@ -66,8 +66,16 @@ public class TokenManager
         }
         catch (Exception ex)
         {
-            Log.Error("asyncGetToken 获取Token失败: " + ex.Message, ex);
-            throw new ApplicationException(ex.Message, ex);
+            string token = ConfigureReadAndWriteUtil.GetConfigValue("token");
+            RestSharpClient client = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"), token);
+            RestApiResult<VersionEntity> res = await client.GetAsync<VersionEntity>("/update/GetLatestVersion");
+            if (string.IsNullOrEmpty(res.data.latestVersion))
+            {
+                Log.Error("asyncGetToken 获取Token失败: " + ex.Message, ex);
+                throw new ApplicationException(ex.Message, ex);
+            }
+            entity.token = token;
+            return entity;
         }
     }
 
