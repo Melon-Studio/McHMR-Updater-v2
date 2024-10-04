@@ -252,6 +252,8 @@
     <Compile Include="core\customException\TestException.cs" />
     <Compile Include="core\entity\ApiEntity.cs" />
     <Compile Include="core\entity\BackgroundEntity.cs" />
+    <Compile Include="core\entity\UpdateFileListEntity.cs" />
+    <Compile Include="core\entity\UpdateFileEntity.cs" />
     <Compile Include="core\entity\HashEntity.cs" />
     <Compile Include="core\entity\ListEntity.cs" />
     <Compile Include="core\entity\PackageEntity.cs" />
