@@ -2,27 +2,20 @@
 using Ionic.Zip;
 using log4net;
 using McHMR_Updater_v2.core;
-using McHMR_Updater_v2.core.convert;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.IO.Packaging;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Security.Policy;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Wpf.Ui.Controls;
@@ -84,13 +77,13 @@ public partial class MainWindow : FluentWindow
         try
         {
             await new TokenManager().setToken();
-            
+
             client = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"), ConfigureReadAndWriteUtil.GetConfigValue("token"));
             noTokenClient = new RestSharpClient(ConfigureReadAndWriteUtil.GetConfigValue("apiUrl"));
             isGetToken = 1;
-            
+
         }
-        catch (Exception ex) 
+        catch (Exception ex)
         {
             await exitUpdater("Token 已失效，请十分钟后再试");
         }
@@ -110,7 +103,7 @@ public partial class MainWindow : FluentWindow
         {
             while (isGetToken == 0) { }
         });
-        
+
         progressMain.Visibility = Visibility.Hidden;
 
         await Task.Run(async () =>
@@ -142,8 +135,7 @@ public partial class MainWindow : FluentWindow
             Log.Error("无法连接至服务器: " + ex.Message);
             await exitUpdater("无法连接至服务器，请联系服主");
         }
-        
-        
+
         // 判断更新
         if (await judgmentUpdate()) return;
         // 请求最新版本哈希列表
@@ -470,12 +462,15 @@ public partial class MainWindow : FluentWindow
         DownloadService downloader = client.GetDownloadService();
         try
         {
-            if (mode.data == 0) {
+            if (mode.data == 0)
+            {
                 await multipleFileDownload(downloader, jsonBody);
-            }else if (mode.data == 1)
+            }
+            else if (mode.data == 1)
             {
                 await incrementalPackageDownload(downloader, jsonBody);
-            }else
+            }
+            else
             {
                 await exitUpdater("服务器配置异常，请联系服主");
             }
@@ -564,20 +559,20 @@ public partial class MainWindow : FluentWindow
     }
     private void setDefaultBackground()
     {
-            ImageBrush brush = null;
-            Bitmap bitmap = Properties.Resources.DefaultBackground;
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0;
-                BitmapImage bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                brush = new ImageBrush(bitmapImage);
-                brush.Stretch = Stretch.UniformToFill;
-                background.Background = brush;
-            }
+        ImageBrush brush = null;
+        Bitmap bitmap = Properties.Resources.DefaultBackground;
+        using (MemoryStream memory = new MemoryStream())
+        {
+            bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+            memory.Position = 0;
+            BitmapImage bitmapImage = new BitmapImage();
+            bitmapImage.BeginInit();
+            bitmapImage.StreamSource = memory;
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.EndInit();
+            brush = new ImageBrush(bitmapImage);
+            brush.Stretch = Stretch.UniformToFill;
+            background.Background = brush;
+        }
     }
 }

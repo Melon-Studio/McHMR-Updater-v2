@@ -1,7 +1,6 @@
 ﻿using log4net;
 using McHMR_Updater_v2.core.entity;
 using McHMR_Updater_v2.core.utils;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
 
