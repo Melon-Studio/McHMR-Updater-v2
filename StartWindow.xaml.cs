@@ -81,7 +81,7 @@ public partial class StartWindow : FluentWindow
             var client = new RestSharpClient(apiInput.Text, null, false);
             var apiResponse = await client.GetAsync<ApiEntity>("");
 
-            if (apiResponse.code == 0) 
+            if (apiResponse.code == 0)
             {
                 // 保存至配置
                 FileStream fileStream = new FileStream(ConfigurationCheck.getConfigFile(), FileMode.Truncate);
@@ -91,7 +91,7 @@ public partial class StartWindow : FluentWindow
                 writer.Close();
                 fileStream.Close();
 
-                ConfigureReadAndWriteUtil.SetConfigValue("launcher", launcherInput.Text,typeof(string));
+                ConfigureReadAndWriteUtil.SetConfigValue("launcher", launcherInput.Text, typeof(string));
 
                 Log.Info("配置完成");
                 resultMsg.Foreground = Brushes.Green;

@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
-using System.Reflection;
 
 namespace McHMR_Updater_v2.core.utils;
 public class ConfigureReadAndWriteUtil

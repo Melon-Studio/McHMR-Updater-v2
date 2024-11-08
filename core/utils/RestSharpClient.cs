@@ -95,7 +95,7 @@ public class RestSharpClient
                 {
                     return result;
                 }
-                else if(result.code == 429)
+                else if (result.code == 429)
                 {
                     throw new Exception("当前IP重复获取Token，请10分钟后再试");
                 }

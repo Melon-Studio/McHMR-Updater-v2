@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace McHMR_Updater_v2.core.entity
 {
     internal class UpdateFileListEntity
     {
-        public List<UpdateFileEntity> fileList { 
+        public List<UpdateFileEntity> fileList
+        {
             get; set;
         }
     }
