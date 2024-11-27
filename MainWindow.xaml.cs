@@ -36,6 +36,11 @@ public partial class MainWindow : FluentWindow
     private RestSharpClient noTokenClient;
     private int isGetToken = 0;
 
+    private long totalBytesToReceive = 0;
+    private long totalBytesReceived = 0;
+    private int totalFilesToDownload = 0;
+    private int filesDownloaded = 0;
+
     public MainWindow()
     {
         Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
@@ -136,8 +141,11 @@ public partial class MainWindow : FluentWindow
             await exitUpdater("无法连接至服务器，请联系服主");
         }
 
+        RestApiResult<DownloadMode> mode = await client.GetAsync<DownloadMode>("/launcher/GetDownloadMode");
         // 判断更新
-        if (await judgmentUpdate()) return;
+        if (mode.data.updateMode == 0) {
+            if (await judgmentUpdate()) return;
+        }
         // 请求最新版本哈希列表
         ListEntity hashList = await requestDifferenceList();
         // 本地校验
@@ -156,7 +164,7 @@ public partial class MainWindow : FluentWindow
         // 请求增量包
         if (inconsistentFile.Count > 0)
         {
-            await requestIncrementalPackage(inconsistentFile);
+            await requestIncrementalPackage(inconsistentFile,mode.data.downloadMode);
             tipDescription.Text = "";
         }
         else
@@ -311,6 +319,49 @@ public partial class MainWindow : FluentWindow
         });
     }
 
+    private void MultifileOnDownloadStarted(object sender, DownloadStartedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            progressMain.Visibility = Visibility.Visible;
+        });
+
+        // 累加总文件大小
+        totalBytesToReceive += e.TotalBytesToReceive;
+    }
+
+    private void MultifileonDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            // 累加已下载的字节数
+            totalBytesReceived += e.ReceivedBytesSize;
+            filesDownloaded++;
+
+            // 计算总下载进度
+            double totalProgressPercentage = (double)totalBytesReceived / totalBytesToReceive * 100;
+
+            progressBar.Value = totalProgressPercentage * 100;
+
+            double speedInBps = e.AverageBytesPerSecondSpeed;
+            double speedInKbps = speedInBps / 1024;
+
+            string speedDisplay;
+            if (speedInKbps >= 1000)
+            {
+                double speedInMbps = speedInKbps / 1024;
+                speedDisplay = $"{speedInMbps:F2} MB/s";
+            }
+            else
+            {
+                speedDisplay = $"{speedInKbps:F2} KB/s";
+            }
+
+            progressBarSpeed.Text = speedDisplay;
+        });
+
+    }
+
     private async Task<Boolean> judgmentUpdate()
     {
         string baseUrl = ConfigureReadAndWriteUtil.GetConfigValue("apiUrl");
@@ -417,7 +468,7 @@ public partial class MainWindow : FluentWindow
         string[] whitelistArrayAfter = whitelistArrayBefore.Where(s => !string.IsNullOrEmpty(s)).ToArray();
         List<string> files = new List<string>();
 
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             // 遍历 laset 列表，检查文件哈希值是否一致
             foreach (HashEntity hashEntity in laset)
@@ -427,7 +478,7 @@ public partial class MainWindow : FluentWindow
 
                 // 尝试计算文件当前哈希值
                 FileHashUtil fileHash = new FileHashUtil();
-                string currentFileHash;
+                string currentFileHash =null;
 
                 try
                 {
@@ -437,10 +488,11 @@ public partial class MainWindow : FluentWindow
                 catch (IOException)
                 {
                     // 如果文件被占用，复制一份然后计算哈希值
-                    string tempFilePath = absoluteFilePath + ".tmp";
-                    File.Copy(absoluteFilePath, tempFilePath, true);
-                    currentFileHash = fileHash.CalculateHash(tempFilePath);
-                    File.Delete(tempFilePath);
+                    //string tempFilePath = absoluteFilePath + ".tmp";
+                    //File.Copy(absoluteFilePath, tempFilePath, true);
+                    //currentFileHash = fileHash.CalculateHash(tempFilePath);
+                    //File.Delete(tempFilePath);
+                    await exitUpdater("游戏处于启动状态，请关闭游戏后重试");
                 }
 
                 // 如果哈希值不一致，将文件路径添加到 files 列表中
@@ -453,20 +505,19 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
-    private async Task requestIncrementalPackage(List<string> inconsistentFile)
+    private async Task requestIncrementalPackage(List<string> inconsistentFile, int mode)
     {
         tipText.Text = "正在等待服务器响应";
         var jsonBodyObject = new { fileList = inconsistentFile };
         string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
-        RestApiResult<int> mode = await client.GetAsync<int>("/launcher/GetDownloadMode");
-        DownloadService downloader = client.GetDownloadService();
+        DownloadService downloader = client.GetDownloadService(1);
         try
         {
-            if (mode.data == 0)
+            if (mode == 0)
             {
                 await multipleFileDownload(downloader, jsonBody);
             }
-            else if (mode.data == 1)
+            else if (mode == 1)
             {
                 await incrementalPackageDownload(downloader, jsonBody);
             }
@@ -535,8 +586,10 @@ public partial class MainWindow : FluentWindow
         RestApiResult<UpdateFileListEntity> file = await client.PostAsync<UpdateFileListEntity>("/update/GetUpdateFileList", jsonBody);
         tipText.Text = "正在下载最新版本";
 
-        downloader.DownloadStarted += OnDownloadStarted;
-        downloader.DownloadProgressChanged += onDownloadProgressChanged;
+        downloader.DownloadStarted += MultifileOnDownloadStarted;
+        downloader.DownloadProgressChanged += MultifileonDownloadProgressChanged;
+
+        totalFilesToDownload = file.data.fileList.Count;
 
         foreach (UpdateFileEntity item in file.data.fileList)
         {

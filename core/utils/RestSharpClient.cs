@@ -197,7 +197,7 @@ public class RestSharpClient
         }
     }
 
-    public DownloadService GetDownloadService()
+    public DownloadService GetDownloadService(int ChunkCount = 8)
     {
         WebHeaderCollection collection = new WebHeaderCollection();
         if (_token != null)
@@ -218,13 +218,11 @@ public class RestSharpClient
 
         DownloadConfiguration downloadOpt = new DownloadConfiguration()
         {
-            ChunkCount = 8,
-            ParallelDownload = true,
+            ChunkCount = ChunkCount,
+            ParallelDownload = ChunkCount!=1,
             Timeout = 10000,
-            RequestConfiguration = requestConfig
+            RequestConfiguration = requestConfig,
         };
-
-        var test = new Downloader.DownloadBuilder();
 
         return new DownloadService(downloadOpt);
     }
