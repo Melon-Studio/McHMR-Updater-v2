@@ -4,7 +4,7 @@
 
 ## 介绍
 
-这是由 Melon-Studio 团队开发的 McHMR 更新器项目，使用 C# 语言，该更新器项目基于 WPF 框架开发，本项目使用国际 GPLv3 开源协议开源，受到法律保护。
+这是由 Melon-Studio 团队开发的 McHMR 更新器项目，使用 C# 语言，该更新器项目基于 WPF 框架开发，本项目使用国际 MIT 开源协议开源，允许第三方开源/闭源启动器拷贝部分代码实现相关功能。
 
 ## 贡献
 
@@ -29,4 +29,4 @@ git clone https://github.com/YouUserName/McHMR-Updater-v2.git
 
 ## 许可证
 
-本开源项目遵循国际 GPLv3 开源许可证，具体内容请详细阅读 [LICENSE](./LICENSE) 文件。
+本开源项目遵循国际 MIT 开源许可证，具体内容请详细阅读 [LICENSE](./LICENSE) 文件。
