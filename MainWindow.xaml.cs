@@ -341,7 +341,7 @@ public partial class MainWindow : FluentWindow
             // 计算总下载进度
             double totalProgressPercentage = (double)totalBytesReceived / totalBytesToReceive * 100;
 
-            progressBar.Value = totalProgressPercentage * 100;
+            progressBar.Value = (totalProgressPercentage * 100);
 
             double speedInBps = e.AverageBytesPerSecondSpeed;
             double speedInKbps = speedInBps / 1024;
