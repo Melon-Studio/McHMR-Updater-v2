@@ -141,9 +141,9 @@ public partial class MainWindow : FluentWindow
             await exitUpdater("无法连接至服务器，请联系服主");
         }
 
-        RestApiResult<DownloadMode> mode = await client.GetAsync<DownloadMode>("/launcher/GetDownloadMode");
+        RestApiResult<int> mode = await client.GetAsync<int>("/launcher/GetUpdateMode");
         // 判断更新
-        if (mode.data.updateMode == 0) {
+        if (mode.data == 0) {
             if (await judgmentUpdate()) return;
         }
         // 请求最新版本哈希列表
@@ -164,7 +164,7 @@ public partial class MainWindow : FluentWindow
         // 请求增量包
         if (inconsistentFile.Count > 0)
         {
-            await requestIncrementalPackage(inconsistentFile,mode.data.downloadMode);
+            await requestIncrementalPackage(inconsistentFile);
             tipDescription.Text = "";
         }
         else
@@ -505,19 +505,20 @@ public partial class MainWindow : FluentWindow
         return files;
     }
 
-    private async Task requestIncrementalPackage(List<string> inconsistentFile, int mode)
+    private async Task requestIncrementalPackage(List<string> inconsistentFile)
     {
         tipText.Text = "正在等待服务器响应";
         var jsonBodyObject = new { fileList = inconsistentFile };
         string jsonBody = JsonConvert.SerializeObject(jsonBodyObject);
         DownloadService downloader = client.GetDownloadService(1);
+        RestApiResult<int> mode = await client.GetAsync<int>("/launcher/GetDownloadMode");
         try
         {
-            if (mode == 0)
+            if (mode.data == 0)
             {
                 await multipleFileDownload(downloader, jsonBody);
             }
-            else if (mode == 1)
+            else if (mode.data == 1)
             {
                 await incrementalPackageDownload(downloader, jsonBody);
             }
